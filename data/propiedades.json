@@ -1,0 +1,22 @@
+[
+  {
+    "id": "eb2b2ae1-d1b2-4b42-8f36-3f61835b6914",
+    "agente": "Tobias Reggiardo",
+    "direccion": "SAn Sebastian 1500",
+    "ciudad": "Funes",
+    "tipo": "",
+    "precio": "150000",
+    "notas": "",
+    "createdAt": "2026-06-12T16:23:53.056Z"
+  },
+  {
+    "id": "88972b63-1467-4f1a-b251-7d5891e96c50",
+    "agente": "Maximo Juaneu",
+    "direccion": "Córdoba 2115",
+    "ciudad": "Funes",
+    "tipo": "",
+    "precio": "",
+    "notas": "",
+    "createdAt": "2026-06-12T16:19:01.511Z"
+  }
+]

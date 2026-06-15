@@ -1,0 +1,15 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="sh" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="1.2" dy="1.8" stdDeviation="2.2" flood-color="rgba(0,0,0,0.45)"/>
+    </filter>
+  </defs>
+  <!-- Left roof triangle -->
+  <polygon points="13,44 52,44 52,18" fill="white" filter="url(#sh)"/>
+  <!-- Right roof triangle -->
+  <polygon points="57,27 57,44 80,44" fill="white" filter="url(#sh)"/>
+  <!-- Left body: single L-shape polygon (top bar + left column joined) -->
+  <polygon points="13,47 52,47 52,57 33,57 33,79 13,79" fill="white" filter="url(#sh)"/>
+  <!-- Right body rectangle -->
+  <rect x="57" y="47" width="23" height="32" fill="white" filter="url(#sh)"/>
+</svg>

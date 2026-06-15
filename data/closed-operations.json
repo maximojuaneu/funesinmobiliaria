@@ -1,0 +1,19 @@
+[
+  {
+    "id": "f7cb45fb-6a84-45aa-9f64-e03ed37982a0",
+    "address": "Cantegrill 2a 4520 , Funes",
+    "lat": -32.92882334666114,
+    "lng": -60.84495663642884,
+    "fecha": "2026-05-10",
+    "tipo": "Casa",
+    "valorPublicacion": 250000,
+    "valorCierre": 230000,
+    "moneda": "USD",
+    "tiempoComercializacion": 120,
+    "captador": "Maximo Juaneu",
+    "vendedor": "Maximo Juaneu",
+    "status": "VENDIDA",
+    "creadaPor": "Maximo Juaneu",
+    "creadaEn": "2026-06-07T20:49:44.193Z"
+  }
+]

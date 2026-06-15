@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-green: #067148;
+    --brand-hover: #045535;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply text-gray-900 bg-white;
+    font-family: var(--font-montserrat), sans-serif;
+  }
+
+  /* Eurostile en todos los headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-eurostile), var(--font-montserrat), sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-green text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand-hover transition-colors inline-block;
+  }
+  .btn-outline {
+    @apply border-2 border-brand-green text-brand-green font-semibold px-6 py-3 rounded-lg hover:bg-brand-green hover:text-white transition-colors inline-block;
+  }
+  .tag-venta {
+    @apply bg-brand-green text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide;
+  }
+  .tag-alquiler {
+    @apply bg-blue-700 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide;
+  }
+  .tag-desarrollo {
+    @apply bg-amber-600 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide;
+  }
+  .page-hero {
+    @apply border-b border-gray-200;
+    padding-top: calc(80px + 48px);
+    padding-bottom: 48px;
+    background-image: url('/marble.jpg');
+    background-size: cover;
+    background-position: center top;
+  }
+  .page-hero-eyebrow {
+    @apply text-gray-600 text-xs font-semibold uppercase tracking-widest block mb-4 text-center;
+  }
+  .section-title {
+    @apply text-3xl font-bold text-gray-900;
+    font-family: var(--font-eurostile), var(--font-montserrat), sans-serif;
+  }
+  .eyebrow {
+    @apply text-brand-green text-sm font-bold uppercase tracking-widest block mb-3;
+    font-family: var(--font-eurostile), var(--font-montserrat), sans-serif;
+  }
+  .font-eurostile {
+    font-family: var(--font-eurostile), var(--font-montserrat), sans-serif;
+  }
+  .input-field {
+    @apply w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-green transition-colors font-sans bg-white;
+  }
+}
