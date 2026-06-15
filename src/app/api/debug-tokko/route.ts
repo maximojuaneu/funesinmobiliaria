@@ -7,7 +7,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const all = await getAllActiveProperties()
-  const producers = [...new Map(all.map(p => [p.producer?.id, p.producer])).values()]
+  const producers = Array.from(new Map(all.map(p => [p.producer?.id, p.producer])).values())
     .filter(Boolean)
     .map(p => ({ id: p!.id, name: p!.name }))
 
