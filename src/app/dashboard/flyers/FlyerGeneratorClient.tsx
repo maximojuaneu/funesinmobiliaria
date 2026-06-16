@@ -129,20 +129,11 @@ export default function FlyerGeneratorClient() {
       canvas.height = H
       const ctx = canvas.getContext('2d')!
 
-      // Fonts are declared in globals.css @font-face — just wait for them to be ready
+      // Fonts are declared in globals.css @font-face — wait for them before drawing
       await Promise.allSettled([
-        document.fonts.load(`700 ${TITLE_FS}px Eurostile`),
-        document.fonts.load(`400 ${ADDR_FS}px MontserratLight`),
+        document.fonts.load('700 90px Eurostile'),
+        document.fonts.load('400 36px MontserratLight'),
       ])
-
-      // Warm-up: force canvas to resolve fonts before drawing (critical on mobile)
-      ctx.save()
-      ctx.globalAlpha = 0
-      ctx.font = `700 ${TITLE_FS}px Eurostile, Arial`
-      ctx.fillText('W', -1000, -1000)
-      ctx.font = `400 ${ADDR_FS}px MontserratLight, Arial`
-      ctx.fillText('W', -1000, -1000)
-      ctx.restore()
 
       // ── Zone constants ────────────────────────────────────────────────────
       const HERO_H   = 600
@@ -257,6 +248,15 @@ export default function FlyerGeneratorClient() {
         : ''
 
       const TITLE_FS = 90, PRICE_FS = 54, STATS_FS = 42, ADDR_FS = 36
+
+      // Warm-up: force canvas to resolve fonts before drawing (critical on mobile)
+      ctx.save()
+      ctx.globalAlpha = 0
+      ctx.font = `700 ${TITLE_FS}px Eurostile, Arial`
+      ctx.fillText('W', -1000, -1000)
+      ctx.font = `400 ${ADDR_FS}px MontserratLight, Arial`
+      ctx.fillText('W', -1000, -1000)
+      ctx.restore()
 
       // Address anchored at fixed position — bottom of marble banner
       const addrY = INFO_Y + INFO_H - 44
