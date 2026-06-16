@@ -419,10 +419,22 @@ export default function FlyerGeneratorClient() {
   }, [selected, badges, drawFlyer])
 
   const download = () => {
-    const link    = document.createElement('a')
-    link.href     = canvasRef.current!.toDataURL('image/jpeg', 0.96)
-    link.download = `flyer-${property?.id ?? 'prop'}.jpg`
-    link.click()
+    const canvas = canvasRef.current!
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.96)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      // En mobile abrimos la imagen en nueva pestaña para guardar con pulsación larga
+      const win = window.open()
+      if (win) {
+        win.document.write(`<img src="${dataUrl}" style="max-width:100%;display:block;margin:auto" />`)
+        win.document.title = `flyer-${property?.id ?? 'prop'}.jpg`
+      }
+    } else {
+      const link = document.createElement('a')
+      link.href = dataUrl
+      link.download = `flyer-${property?.id ?? 'prop'}.jpg`
+      link.click()
+    }
   }
 
   return (

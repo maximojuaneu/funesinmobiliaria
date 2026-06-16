@@ -1,6 +1,7 @@
 'use client'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Suspense } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import PropertyCard from './PropertyCard'
 import PropertyFilters from './PropertyFilters'
 import PropertyMapView from './PropertyMapView'
@@ -62,9 +63,15 @@ function Pagination({ page, total, onChange }: { page: number; total: number; on
 }
 
 export default function PropertiesPageContent({ properties, operationType, initialView = 'list' }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [view, setView] = useState<'list' | 'map'>(initialView)
   const [sort, setSort] = useState<SortKey>('recent')
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(() => {
+    const p = parseInt(searchParams.get('page') ?? '1', 10)
+    return isNaN(p) || p < 1 ? 1 : p
+  })
 
   const handleSetView = (newView: 'list' | 'map') => {
     setView(newView)
@@ -108,7 +115,9 @@ export default function PropertiesPageContent({ properties, operationType, initi
 
   const handlePageChange = (p: number) => {
     setPage(p)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', String(p))
+    router.push(`${pathname}?${params.toString()}`, { scroll: true })
   }
 
   return (
