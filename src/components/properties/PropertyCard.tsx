@@ -107,7 +107,7 @@ export default function PropertyCard({ property, operationType }: Props) {
   }
 
   return (
-    <Link href={`/propiedades/${property.id}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200">
+    <Link href={`/propiedades/${property.id}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm md:hover:shadow-md md:hover:-translate-y-1 transition-all duration-200">
       <div
         className="relative h-52 overflow-hidden bg-gray-100"
         onTouchStart={total > 1 ? handleTouchStart : undefined}
@@ -121,7 +121,7 @@ export default function PropertyCard({ property, operationType }: Props) {
             src={photo.image}
             alt={property.publication_title || property.address}
             fill
-            className="object-cover"
+            className={`object-cover ${i > 0 ? 'hidden md:block' : ''}`}
             style={{ opacity: i === idx ? 1 : 0, transition: 'none' }}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             priority={i === 0}
@@ -157,12 +157,12 @@ export default function PropertyCard({ property, operationType }: Props) {
           </div>
         )}
 
-        {/* Arrows — visible on hover when there are multiple slides */}
+        {/* Arrows — desktop only, visible on hover */}
         {total > 1 && (
           <>
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
               aria-label="Foto anterior"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -170,15 +170,15 @@ export default function PropertyCard({ property, operationType }: Props) {
             {!isMoreSlide && (
               <button
                 onClick={next}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
                 aria-label="Foto siguiente"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             )}
 
-            {/* Dots */}
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-20">
+            {/* Dots — desktop only */}
+            <div className="hidden md:flex absolute bottom-2 left-0 right-0 justify-center gap-1 z-20">
               {Array.from({ length: total }).map((_, i) => (
                 <span
                   key={i}
