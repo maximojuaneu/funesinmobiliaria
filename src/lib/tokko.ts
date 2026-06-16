@@ -13,8 +13,8 @@ const normalize = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 async function tokkoFetch<T>(path: string, params: Record<string, string | number> = {}): Promise<T> {
-  const BASE_URL = process.env.TOKKO_BASE_URL ?? 'https://www.tokkobroker.com/api/v1'
-  const API_KEY  = process.env.TOKKO_API_KEY ?? ''
+  const BASE_URL = (process.env.TOKKO_BASE_URL ?? 'https://www.tokkobroker.com/api/v1').trim()
+  const API_KEY  = (process.env.TOKKO_API_KEY ?? '').trim()
   const url = new URL(`${BASE_URL}${path}`)
   url.searchParams.set('key', API_KEY)
   url.searchParams.set('format', 'json')
