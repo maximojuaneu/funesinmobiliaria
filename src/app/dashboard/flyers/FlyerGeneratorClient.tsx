@@ -129,18 +129,20 @@ export default function FlyerGeneratorClient() {
       canvas.height = H
       const ctx = canvas.getContext('2d')!
 
-      try {
-        const euroFont = new FontFace('Eurostile', 'url(/fonts/Eurostile.ttf)')
-        const loadedEuro = await euroFont.load()
-        document.fonts.add(loadedEuro)
-        await document.fonts.load(`700 ${TITLE_FS}px Eurostile`)
-      } catch {}
-      try {
-        const montLight = new FontFace('MontserratLight', 'url(/fonts/Montserrat-Light.otf)')
-        const loadedMont = await montLight.load()
-        document.fonts.add(loadedMont)
-        await document.fonts.load(`400 ${ADDR_FS}px MontserratLight`)
-      } catch {}
+      // Fonts are declared in globals.css @font-face — just wait for them to be ready
+      await Promise.allSettled([
+        document.fonts.load(`700 ${TITLE_FS}px Eurostile`),
+        document.fonts.load(`400 ${ADDR_FS}px MontserratLight`),
+      ])
+
+      // Warm-up: force canvas to resolve fonts before drawing (critical on mobile)
+      ctx.save()
+      ctx.globalAlpha = 0
+      ctx.font = `700 ${TITLE_FS}px Eurostile, Arial`
+      ctx.fillText('W', -1000, -1000)
+      ctx.font = `400 ${ADDR_FS}px MontserratLight, Arial`
+      ctx.fillText('W', -1000, -1000)
+      ctx.restore()
 
       // ── Zone constants ────────────────────────────────────────────────────
       const HERO_H   = 600

@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Canvas font declarations — must use these exact family names in canvas ctx.font */
+@font-face {
+  font-family: 'Eurostile';
+  src: url('/fonts/Eurostile.ttf') format('truetype');
+  font-weight: 400 700;
+  font-display: block;
+}
+@font-face {
+  font-family: 'MontserratLight';
+  src: url('/fonts/Montserrat-Light.otf') format('opentype');
+  font-weight: 400;
+  font-display: block;
+}
+
 @layer base {
   :root {
     --brand-green: #067148;
