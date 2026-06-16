@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
 
     getDb().prepare("INSERT OR REPLACE INTO paper_auth (propId, marcadaEn) VALUES (?, datetime('now'))").run(String(propId))
     return NextResponse.json({ ok: true })
-  } catch (err: any) {
+  } catch (err) {
     console.error('[paper-auth POST]', err)
-    return NextResponse.json({ error: `Error al guardar: ${err?.message ?? String(err)}` }, { status: 500 })
+    return NextResponse.json({ error: 'Error al guardar. Intentá de nuevo.' }, { status: 500 })
   }
 }
 

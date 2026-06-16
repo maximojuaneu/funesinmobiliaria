@@ -2,8 +2,26 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
 
-const DB_PATH  = path.join(process.cwd(), 'data', 'funes.db')
-const DATA_DIR = path.join(process.cwd(), 'data')
+const SOURCE_DB = path.join(process.cwd(), 'data', 'funes.db')
+const DATA_DIR  = path.join(process.cwd(), 'data')
+// Vercel serverless has a read-only filesystem except /tmp
+const TMP_DB    = '/tmp/funes.db'
+
+function resolveDbPath(): string {
+  try {
+    // Test if we can write to the source directory
+    fs.accessSync(path.dirname(SOURCE_DB), fs.constants.W_OK)
+    return SOURCE_DB
+  } catch {
+    // Read-only filesystem (Vercel) — copy to /tmp on first use
+    if (!fs.existsSync(TMP_DB) && fs.existsSync(SOURCE_DB)) {
+      fs.copyFileSync(SOURCE_DB, TMP_DB)
+    }
+    return TMP_DB
+  }
+}
+
+const DB_PATH = resolveDbPath()
 
 let _db: Database.Database | null = null
 
