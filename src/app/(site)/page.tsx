@@ -6,7 +6,7 @@ import HeroSearch from '@/components/home/HeroSearch'
 import StatsCounter from '@/components/home/StatsCounter'
 import HeroVideo from '@/components/home/HeroVideo'
 
-export const revalidate = 300 // regenerate page every 5 minutes
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   let featuredList: any[] = []

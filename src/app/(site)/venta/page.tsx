@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { getProperties } from '@/lib/tokko'
 import PropertiesPageContent from '@/components/properties/PropertiesPageContent'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Propiedades en Venta',
