@@ -17,9 +17,18 @@ const FADE_RANGE = 120
 export default function Navbar() {
   const [scrollY, setScrollY]   = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
 
   const isHome = pathname === '/'
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)')
+    setIsMobile(mq.matches)
+    const onMQ = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', onMQ)
+    return () => mq.removeEventListener('change', onMQ)
+  }, [])
 
   useEffect(() => {
     // Sync initial position (e.g. after back-navigation)
@@ -29,8 +38,8 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
-  // 0 = fully transparent (top of home), 1 = fully white
-  const opacity = isHome ? Math.min(scrollY / FADE_RANGE, 1) : 1
+  // En mobile siempre blanco. En desktop, fade transparente→blanco al scrollear en home.
+  const opacity = (isHome && !isMobile) ? Math.min(scrollY / FADE_RANGE, 1) : 1
   const isTransparent = opacity < 1
 
   // Text colour interpolation: white → gray-600 (#4b5563)
