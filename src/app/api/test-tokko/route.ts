@@ -9,7 +9,7 @@ export async function GET() {
   if (!key) return NextResponse.json({ error: 'TOKKO_API_KEY no configurada' })
 
   try {
-    const url = `${base}/property/?key=${key}&format=json&limit=1`
+    const url = `${base}/property/?key=${key}&format=json&limit=200`
     const res = await fetch(url, { cache: 'no-store' })
     const data = await res.json()
     return NextResponse.json({
