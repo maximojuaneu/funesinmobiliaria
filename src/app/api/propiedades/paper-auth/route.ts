@@ -13,22 +13,36 @@ export async function GET() {
 
 // POST { propId } — mark a property as paper-signed
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const { propId } = await req.json()
-  if (!propId) return NextResponse.json({ error: 'propId requerido' }, { status: 400 })
+    const body = await req.json()
+    const propId = body?.propId
+    if (!propId) return NextResponse.json({ error: 'propId requerido' }, { status: 400 })
 
-  getDb().prepare('INSERT OR REPLACE INTO paper_auth (propId, marcadaEn) VALUES (?, datetime(\'now\'))').run(String(propId))
-  return NextResponse.json({ ok: true })
+    getDb().prepare("INSERT OR REPLACE INTO paper_auth (propId, marcadaEn) VALUES (?, datetime('now'))").run(String(propId))
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[paper-auth POST]', err)
+    return NextResponse.json({ error: 'Error al guardar' }, { status: 500 })
+  }
 }
 
 // DELETE { propId } — unmark
 export async function DELETE(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const { propId } = await req.json()
-  getDb().prepare('DELETE FROM paper_auth WHERE propId = ?').run(String(propId))
-  return NextResponse.json({ ok: true })
+    const body = await req.json()
+    const propId = body?.propId
+    if (!propId) return NextResponse.json({ error: 'propId requerido' }, { status: 400 })
+
+    getDb().prepare('DELETE FROM paper_auth WHERE propId = ?').run(String(propId))
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[paper-auth DELETE]', err)
+    return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
+  }
 }

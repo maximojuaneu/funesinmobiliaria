@@ -10,15 +10,26 @@ export default function AutorizacionesTabs() {
   const [pending,  setPending]  = useState(0)
 
   useEffect(() => {
-    fetch('/api/autorizaciones')
-      .then(r => r.ok ? r.json() : [])
-      .then((auths: { propiedadId: string | null }[]) => {
-        const count = auths.filter(a => !a.propiedadId).length
-        setPending(count)
-        // Auto-switch to propiedades tab if there are pending authorizations
-        if (count > 0) setActive('propiedades')
-      })
-      .catch(() => {})
+    let initialLoad = true
+
+    const refresh = () => {
+      fetch('/api/autorizaciones')
+        .then(r => r.ok ? r.json() : [])
+        .then((auths: { propiedadId: string | null }[]) => {
+          const count = auths.filter(a => !a.propiedadId).length
+          setPending(count)
+          if (initialLoad && count > 0) {
+            setActive('propiedades')
+            initialLoad = false
+          }
+        })
+        .catch(() => {})
+    }
+
+    refresh()
+    // Poll every 30s so new digital signatures appear without manual refresh
+    const interval = setInterval(refresh, 30_000)
+    return () => clearInterval(interval)
   }, [])
 
   return (

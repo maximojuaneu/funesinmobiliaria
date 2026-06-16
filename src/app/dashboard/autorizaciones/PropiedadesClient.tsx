@@ -189,19 +189,27 @@ export default function PropiedadesClient() {
     const isSigned = paperSigned.has(propId)
     if (isSigned && !confirm('¿Quitar la marca de "Firmada en papel"?')) return
     setPaperLoading(propId)
-    const res = await fetch('/api/propiedades/paper-auth', {
-      method:  isSigned ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propId }),
-    })
-    if (res.ok) {
-      setPaperSigned(prev => {
-        const next = new Set(prev)
-        isSigned ? next.delete(propId) : next.add(propId)
-        return next
+    try {
+      const res = await fetch('/api/propiedades/paper-auth', {
+        method:  isSigned ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propId }),
       })
+      if (res.ok) {
+        setPaperSigned(prev => {
+          const next = new Set(prev)
+          isSigned ? next.delete(propId) : next.add(propId)
+          return next
+        })
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error ?? 'No se pudo guardar. Intentá de nuevo.')
+      }
+    } catch {
+      alert('Error de conexión. Verificá tu internet e intentá de nuevo.')
+    } finally {
+      setPaperLoading(null)
     }
-    setPaperLoading(null)
   }
 
   // ── Filters ───────────────────────────────────────────────────────────────
