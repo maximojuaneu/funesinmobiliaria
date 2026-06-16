@@ -38,8 +38,9 @@ function toBase64(url: string): Promise<string> {
 const inputCls = 'border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition w-full'
 
 export default function FirmaClient({ token }: { token: string }) {
-  const [data, setData]   = useState<TokenData | null>(null)
-  const [error, setError] = useState(false)
+  const [data,   setData]   = useState<TokenData | null>(null)
+  const [error,  setError]  = useState(false)
+  const [signed, setSigned] = useState(false)
 
   const [nombre,    setNombre]    = useState('')
   const [dni,       setDni]       = useState('')
@@ -55,7 +56,10 @@ export default function FirmaClient({ token }: { token: string }) {
   useEffect(() => {
     fetch(`/api/autorizaciones/pending/${token}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then((d: TokenData) => setData(d))
+      .then((d: TokenData & { signed?: boolean }) => {
+        if (d.signed) setSigned(true)
+        else setData(d)
+      })
       .catch(() => setError(true))
   }, [token])
 
@@ -145,6 +149,10 @@ export default function FirmaClient({ token }: { token: string }) {
         console.error('El servidor no guardó la autorización. Status:', saveRes?.status)
       }
 
+      // Mark this link as already signed so it can't be used again
+      await fetch(`/api/autorizaciones/pending/${token}`, { method: 'PATCH' }).catch(() => {})
+
+      setSigned(true)
       setDone(true)
     } catch (err) {
       console.error(err)
@@ -153,6 +161,20 @@ export default function FirmaClient({ token }: { token: string }) {
       setLoading(false)
     }
   }
+
+  if (signed && !done) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">
+        <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="text-gray-800 font-bold text-lg mb-2">Ya firmaste este documento</p>
+        <p className="text-gray-400 text-sm">Esta autorización ya fue firmada. Si tenés alguna consulta, contactá a tu asesor de Funes Inmobiliaria.</p>
+      </div>
+    </div>
+  )
 
   if (error) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
