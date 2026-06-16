@@ -89,8 +89,9 @@ export default function AutorizacionClient() {
     exclusividad:   false,
     fecha:          todayAR(),
   })
-  const [link,   setLink]   = useState('')
-  const [copied, setCopied] = useState(false)
+  const [link,        setLink]        = useState('')
+  const [copied,      setCopied]      = useState(false)
+  const [generating,  setGenerating]  = useState(false)
   const linkRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -112,16 +113,28 @@ export default function AutorizacionClient() {
     setForm(f => ({ ...f, precio: digits, precioLetras: (!digits || isNaN(n)) ? '' : numToWords(n) }))
   }
 
-  const generateLink = () => {
-    const token = btoa(encodeURIComponent(JSON.stringify(form)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    setLink(`${window.location.origin}/firma/${token}`)
+  const generateLink = async () => {
+    setGenerating(true)
     setCopied(false)
-    // On mobile, scroll to the link after it renders
-    if (window.innerWidth < 1024) {
-      setTimeout(() => {
-        linkRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 50)
+    try {
+      const res = await fetch('/api/autorizaciones/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.id) throw new Error(data.error ?? 'Error')
+      setLink(`${window.location.origin}/firma/${data.id}`)
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          linkRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 50)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('No se pudo generar el link. Intentá de nuevo.')
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -193,15 +206,22 @@ export default function AutorizacionClient() {
       <div className="flex flex-col gap-3">
         {/* Botón + link inline en desktop, apilados en mobile */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <button onClick={generateLink} disabled={!form.inmuebleDir.trim() || !form.precio}
+          <button onClick={generateLink} disabled={!form.inmuebleDir.trim() || !form.precio || generating}
             className="shrink-0 bg-brand-green hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl transition flex items-center gap-2 text-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M14.828 14.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.1 1.1" />
-            </svg>
-            Generar link de firma
+            {generating ? (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M14.828 14.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.1 1.1" />
+              </svg>
+            )}
+            {generating ? 'Generando…' : 'Generar link de firma'}
           </button>
 
           {/* Link: inline en desktop */}

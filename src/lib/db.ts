@@ -84,4 +84,9 @@ export const SCHEMA_SQL = [
     propId    TEXT PRIMARY KEY,
     marcadaEn TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
+  `CREATE TABLE IF NOT EXISTS firma_pending (
+    id        TEXT PRIMARY KEY,
+    data      TEXT NOT NULL,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
 ]

@@ -53,10 +53,10 @@ export default function FirmaClient({ token }: { token: string }) {
   const [done,      setDone]      = useState(false)
 
   useEffect(() => {
-    try {
-      const padded = token.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice((token.length % 4 || 4) - 2)
-      setData(JSON.parse(decodeURIComponent(atob(padded))) as TokenData)
-    } catch { setError(true) }
+    fetch(`/api/autorizaciones/pending/${token}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((d: TokenData) => setData(d))
+      .catch(() => setError(true))
   }, [token])
 
   useEffect(() => {
