@@ -1,32 +1,19 @@
 import { NextResponse } from 'next/server'
+import { getProperties } from '@/lib/tokko'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const key = process.env.TOKKO_API_KEY ?? ''
-  const base = process.env.TOKKO_BASE_URL ?? 'https://www.tokkobroker.com/api/v1'
-
-  if (!key) return NextResponse.json({ error: 'TOKKO_API_KEY no configurada' })
-
   try {
-    const url = `${base}/property/?key=${key}&format=json&limit=200`
-    const res = await fetch(url, { cache: 'no-store' })
-    const data = await res.json()
-    const props = data.objects ?? []
-    const withSale = props.filter((p: any) => p.operations?.some((op: any) => op.operation_id === 1))
-    const withRent = props.filter((p: any) => p.operations?.some((op: any) => op.operation_id === 2))
-    const firstOps = props[0]?.operations ?? []
+    const sale = await getProperties({ operation: 'Sale' })
+    const rent = await getProperties({ operation: 'Rent' })
     return NextResponse.json({
-      status: res.status,
-      ok: res.ok,
-      totalCount: data.meta?.total_count ?? null,
-      fetchedCount: props.length,
-      withSaleOpId1: withSale.length,
-      withRentOpId2: withRent.length,
-      firstPropertyAddress: props[0]?.address ?? null,
-      firstPropertyOperations: firstOps,
+      saleCount: sale.count,
+      rentCount: rent.count,
+      firstSale: sale.objects[0]?.address ?? null,
+      firstRent: rent.objects[0]?.address ?? null,
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message })
+    return NextResponse.json({ error: e.message, stack: e.stack?.slice(0, 500) })
   }
 }
