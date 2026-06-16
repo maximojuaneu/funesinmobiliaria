@@ -34,11 +34,15 @@ export async function POST(req: NextRequest, { params }: { params: { propId: str
 
     const { propId } = params
     const db         = getDb()
-    let   propDoc    = db.prepare('SELECT * FROM prop_docs WHERE propId = ?').get(propId) as PropDoc | undefined
+    const found      = await db.execute({ sql: 'SELECT * FROM prop_docs WHERE propId = ?', args: [propId] })
+    let   propDoc    = found.rows[0] as unknown as PropDoc | undefined
 
     if (!propDoc && address) {
       const folderId = await getOrCreatePropertyFolder(address, city)
-      db.prepare('INSERT OR IGNORE INTO prop_docs (propId,folderId,address,city) VALUES (?,?,?,?)').run(propId, folderId, address, city)
+      await db.execute({
+        sql: 'INSERT OR IGNORE INTO prop_docs (propId,folderId,address,city) VALUES (?,?,?,?)',
+        args: [propId, folderId, address, city],
+      })
       propDoc = { propId, folderId, address, city }
     }
 

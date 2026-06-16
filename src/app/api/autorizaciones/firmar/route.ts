@@ -36,20 +36,23 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getDb()
-    db.prepare(`
-      INSERT INTO autorizaciones
+    await db.execute({
+      sql: `INSERT INTO autorizaciones
         (id,agenteNombre,agenteEmail,agenteTel,inmuebleDir,inmuebleCiudad,
          provincia,partida,precio,precioLetras,comision,vigencia,exclusividad,
          fecha,titularNombre,titularDNI,titularTel,titularEmail,fechaFirma,
          propiedadId,firmaDataUrl)
-      VALUES
-        (@id,@agenteNombre,@agenteEmail,@agenteTel,@inmuebleDir,@inmuebleCiudad,
-         @provincia,@partida,@precio,@precioLetras,@comision,@vigencia,@exclusividad,
-         @fecha,@titularNombre,@titularDNI,@titularTel,@titularEmail,@fechaFirma,
-         @propiedadId,@firmaDataUrl)
-    `).run(record)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      args: [
+        record.id, record.agenteNombre, record.agenteEmail, record.agenteTel,
+        record.inmuebleDir, record.inmuebleCiudad, record.provincia, record.partida,
+        record.precio, record.precioLetras, record.comision, record.vigencia,
+        record.exclusividad, record.fecha, record.titularNombre, record.titularDNI,
+        record.titularTel, record.titularEmail, record.fechaFirma,
+        record.propiedadId, record.firmaDataUrl,
+      ],
+    })
 
-    // Email notification
     if (process.env.RESEND_API_KEY && record.agenteEmail) {
       const resend = new Resend(process.env.RESEND_API_KEY)
       await resend.emails.send({

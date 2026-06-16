@@ -26,8 +26,8 @@ export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const ops = getDb().prepare('SELECT * FROM closed_operations ORDER BY rowid DESC').all()
-  return NextResponse.json(ops)
+  const result = await getDb().execute('SELECT * FROM closed_operations ORDER BY rowid DESC')
+  return NextResponse.json(result.rows)
 }
 
 export async function POST(req: NextRequest) {
@@ -59,14 +59,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
   }
 
-  getDb().prepare(`
-    INSERT INTO closed_operations
+  await getDb().execute({
+    sql: `INSERT INTO closed_operations
       (id,address,lat,lng,fecha,tipo,valorPublicacion,valorCierre,
        tiempoComercializacion,captador,vendedor,status,creadaPor,creadaEn,source,photoUrl,tokkoId)
-    VALUES
-      (@id,@address,@lat,@lng,@fecha,@tipo,@valorPublicacion,@valorCierre,
-       @tiempoComercializacion,@captador,@vendedor,@status,@creadaPor,@creadaEn,@source,@photoUrl,@tokkoId)
-  `).run({ ...op, tokkoId: op.tokkoId ?? null })
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    args: [
+      op.id, op.address, op.lat, op.lng, op.fecha, op.tipo,
+      op.valorPublicacion, op.valorCierre, op.tiempoComercializacion,
+      op.captador, op.vendedor, op.status, op.creadaPor, op.creadaEn,
+      op.source ?? 'manual', op.photoUrl ?? '', op.tokkoId ?? null,
+    ],
+  })
 
   return NextResponse.json({ ok: true, op })
 }
@@ -81,12 +85,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   const db = getDb()
-  const op = db.prepare('SELECT * FROM closed_operations WHERE id = ?').get(id)
-  if (!op) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  const found = await db.execute({ sql: 'SELECT * FROM closed_operations WHERE id = ?', args: [id] })
+  if (!found.rows[0]) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-  db.prepare('UPDATE closed_operations SET status = ? WHERE id = ?').run(status, id)
-  const updated = db.prepare('SELECT * FROM closed_operations WHERE id = ?').get(id)
-  return NextResponse.json({ ok: true, op: updated })
+  await db.execute({ sql: 'UPDATE closed_operations SET status = ? WHERE id = ?', args: [status, id] })
+  const updated = await db.execute({ sql: 'SELECT * FROM closed_operations WHERE id = ?', args: [id] })
+  return NextResponse.json({ ok: true, op: updated.rows[0] })
 }
 
 export async function DELETE(req: NextRequest) {
@@ -94,6 +98,6 @@ export async function DELETE(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await req.json()
-  getDb().prepare('DELETE FROM closed_operations WHERE id = ?').run(id)
+  await getDb().execute({ sql: 'DELETE FROM closed_operations WHERE id = ?', args: [id] })
   return NextResponse.json({ ok: true })
 }

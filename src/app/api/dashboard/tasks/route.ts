@@ -21,16 +21,17 @@ export async function GET(req: NextRequest) {
   const agentParam = new URL(req.url).searchParams.get('agent')
   const db = getDb()
 
-  let tasks: unknown[]
+  let result
   if (session.role === 'admin') {
-    tasks = agentParam
-      ? db.prepare('SELECT * FROM tasks WHERE assignedTo = ?').all(agentParam)
-      : db.prepare('SELECT * FROM tasks').all()
+    result = agentParam
+      ? await db.execute({ sql: 'SELECT * FROM tasks WHERE assignedTo = ?', args: [agentParam] })
+      : await db.execute('SELECT * FROM tasks')
   } else {
-    tasks = db.prepare('SELECT * FROM tasks WHERE assignedTo = ?').all(session.name)
+    result = await db.execute({ sql: 'SELECT * FROM tasks WHERE assignedTo = ?', args: [session.name] })
   }
 
-  ;(tasks as TaskRecord[]).sort((a, b) => {
+  const tasks = result.rows as unknown as TaskRecord[]
+  tasks.sort((a, b) => {
     if (a.status !== b.status) return a.status === 'pending' ? -1 : 1
     if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
     if (a.dueDate) return -1
@@ -64,10 +65,12 @@ export async function POST(req: NextRequest) {
 
   if (!task.title) return NextResponse.json({ error: 'Título requerido' }, { status: 400 })
 
-  getDb().prepare(`
-    INSERT INTO tasks (id,title,description,dueDate,assignedTo,createdBy,status,priority,createdAt)
-    VALUES (@id,@title,@description,@dueDate,@assignedTo,@createdBy,@status,@priority,@createdAt)
-  `).run(task)
+  await getDb().execute({
+    sql: `INSERT INTO tasks (id,title,description,dueDate,assignedTo,createdBy,status,priority,createdAt)
+          VALUES (?,?,?,?,?,?,?,?,?)`,
+    args: [task.id, task.title, task.description, task.dueDate,
+           task.assignedTo, task.createdBy, task.status, task.priority, task.createdAt],
+  })
 
   return NextResponse.json({ ok: true, task })
 }
@@ -79,19 +82,20 @@ export async function PATCH(req: NextRequest) {
   const { id, status } = await req.json()
   if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
 
-  const db   = getDb()
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRecord | undefined
+  const db = getDb()
+  const found = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [id] })
+  const task  = found.rows[0] as unknown as TaskRecord | undefined
   if (!task) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
   if (session.role !== 'admin' && task.assignedTo !== session.name) {
     return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
   }
 
   if (status && ['pending', 'done'].includes(status)) {
-    db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, id)
+    await db.execute({ sql: 'UPDATE tasks SET status = ? WHERE id = ?', args: [status, id] })
   }
 
-  const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
-  return NextResponse.json({ ok: true, task: updated })
+  const updated = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [id] })
+  return NextResponse.json({ ok: true, task: updated.rows[0] })
 }
 
 export async function DELETE(req: NextRequest) {
@@ -100,12 +104,13 @@ export async function DELETE(req: NextRequest) {
 
   const { id } = await req.json()
   const db     = getDb()
-  const task   = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRecord | undefined
+  const found  = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [id] })
+  const task   = found.rows[0] as unknown as TaskRecord | undefined
   if (!task) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
   if (session.role !== 'admin' && task.createdBy !== session.name) {
     return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
   }
 
-  db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  await db.execute({ sql: 'DELETE FROM tasks WHERE id = ?', args: [id] })
   return NextResponse.json({ ok: true })
 }

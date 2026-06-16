@@ -17,10 +17,11 @@ export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const props = getDb()
-    .prepare('SELECT * FROM propiedades WHERE lower(agente) = lower(?) ORDER BY rowid DESC')
-    .all(session.name)
-  return NextResponse.json(props)
+  const result = await getDb().execute({
+    sql: 'SELECT * FROM propiedades WHERE lower(agente) = lower(?) ORDER BY rowid DESC',
+    args: [session.name],
+  })
+  return NextResponse.json(result.rows)
 }
 
 export async function POST(req: NextRequest) {
@@ -43,10 +44,12 @@ export async function POST(req: NextRequest) {
     createdAt: new Date().toISOString(),
   }
 
-  getDb().prepare(`
-    INSERT INTO propiedades (id,agente,direccion,ciudad,tipo,precio,notas,createdAt)
-    VALUES (@id,@agente,@direccion,@ciudad,@tipo,@precio,@notas,@createdAt)
-  `).run(item)
+  await getDb().execute({
+    sql: `INSERT INTO propiedades (id,agente,direccion,ciudad,tipo,precio,notas,createdAt)
+          VALUES (?,?,?,?,?,?,?,?)`,
+    args: [item.id, item.agente, item.direccion, item.ciudad,
+           item.tipo, item.precio, item.notas, item.createdAt],
+  })
 
   return NextResponse.json(item, { status: 201 })
 }

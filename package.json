@@ -10,6 +10,7 @@
     "postinstall": "rm -rf .next"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "@react-pdf/renderer": "^4.5.1",
     "@types/leaflet.markercluster": "^1.5.6",
     "bcryptjs": "^2.4.3",

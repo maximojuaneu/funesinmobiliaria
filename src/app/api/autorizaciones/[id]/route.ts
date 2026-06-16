@@ -17,8 +17,9 @@ export async function GET(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const db     = getDb()
-  const record = db.prepare('SELECT * FROM autorizaciones WHERE id = ?').get(params.id) as Record<string, unknown> | undefined
+  const db = getDb()
+  const result = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
+  const record = result.rows[0] as unknown as Record<string, unknown> | undefined
   if (!record || !canAccess(session, String(record.agenteNombre))) {
     return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   }
@@ -32,16 +33,20 @@ export async function PATCH(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const body   = await req.json()
-  const db     = getDb()
-  const record = db.prepare('SELECT * FROM autorizaciones WHERE id = ?').get(params.id) as Record<string, unknown> | undefined
+  const body = await req.json()
+  const db = getDb()
+  const result = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
+  const record = result.rows[0] as unknown as Record<string, unknown> | undefined
   if (!record || !canAccess(session, String(record.agenteNombre))) {
     return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   }
 
-  db.prepare('UPDATE autorizaciones SET propiedadId = ? WHERE id = ?').run(body.propiedadId ?? null, params.id)
-  const updated = db.prepare('SELECT * FROM autorizaciones WHERE id = ?').get(params.id) as Record<string, unknown>
-  return NextResponse.json(toAuth(updated))
+  await db.execute({
+    sql: 'UPDATE autorizaciones SET propiedadId = ? WHERE id = ?',
+    args: [body.propiedadId ?? null, params.id],
+  })
+  const updated = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
+  return NextResponse.json(toAuth(updated.rows[0] as unknown as Record<string, unknown>))
 }
 
 export async function DELETE(
@@ -51,8 +56,9 @@ export async function DELETE(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const db     = getDb()
-  const record = db.prepare('SELECT * FROM autorizaciones WHERE id = ?').get(params.id) as Record<string, unknown> | undefined
+  const db = getDb()
+  const result = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
+  const record = result.rows[0] as unknown as Record<string, unknown> | undefined
   if (!record || !canAccess(session, String(record.agenteNombre))) {
     return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   }
@@ -60,6 +66,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'No se puede eliminar una autorización asignada' }, { status: 400 })
   }
 
-  db.prepare('DELETE FROM autorizaciones WHERE id = ?').run(params.id)
+  await db.execute({ sql: 'DELETE FROM autorizaciones WHERE id = ?', args: [params.id] })
   return NextResponse.json({ ok: true })
 }
