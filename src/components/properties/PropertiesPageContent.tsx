@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Suspense } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import PropertyCard from './PropertyCard'
@@ -7,6 +7,8 @@ import PropertyFilters from './PropertyFilters'
 import PropertyMapView from './PropertyMapView'
 import type { TokkoProperty } from '@/types/tokko'
 import { getOperationPrice } from '@/lib/tokko'
+
+const SCROLL_KEY = 'prop-list-scroll'
 
 const PAGE_SIZE = 24
 
@@ -91,6 +93,18 @@ export default function PropertiesPageContent({ properties, operationType, initi
     return () => observer.disconnect()
   }, [])
 
+  // Restaurar posición de scroll al volver desde una ficha de propiedad
+  useEffect(() => {
+    const savedY = sessionStorage.getItem(SCROLL_KEY)
+    if (!savedY) return
+    const y = parseInt(savedY, 10)
+    sessionStorage.removeItem(SCROLL_KEY)
+    // Doble RAF para asegurar que el contenido esté pintado antes de scrollear
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo({ top: y, behavior: 'instant' })
+    }))
+  }, [])
+
   const baseOpType: 'Sale' | 'Rent' | 'Temporary Rent' =
     operationType === 'Sale' ? 'Sale' :
     operationType === 'TempRent' ? 'Temporary Rent' : 'Rent'
@@ -105,8 +119,32 @@ export default function PropertiesPageContent({ properties, operationType, initi
     })
   }, [properties, sort, baseOpType])
 
-  // Reset to page 1 whenever the sorted list changes (filter or sort applied)
-  useEffect(() => { setPage(1) }, [sorted])
+  // Clave de filtros activos, excluyendo "page" y "view" para que cambiar de
+  // página no dispare un reset. Solo cambia cuando el usuario aplica filtros reales.
+  const filterKey = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('page')
+    params.delete('view')
+    return params.toString()
+  }, [searchParams])
+
+  const prevFilterKey = useRef(filterKey)
+  const prevSort = useRef(sort)
+  const isMounted = useRef(false)
+
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true
+      prevFilterKey.current = filterKey
+      prevSort.current = sort
+      return
+    }
+    const filtersChanged = prevFilterKey.current !== filterKey
+    const sortChanged    = prevSort.current !== sort
+    prevFilterKey.current = filterKey
+    prevSort.current = sort
+    if (filtersChanged || sortChanged) setPage(1)
+  }, [filterKey, sort])
 
   const paginated = useMemo(
     () => sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -117,7 +155,8 @@ export default function PropertiesPageContent({ properties, operationType, initi
     setPage(p)
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', String(p))
-    router.push(`${pathname}?${params.toString()}`, { scroll: true })
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (

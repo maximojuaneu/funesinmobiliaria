@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { TokkoProperty } from '@/types/tokko'
@@ -106,8 +106,12 @@ export default function PropertyCard({ property, operationType }: Props) {
     else setIdx(i => (i - 1 + total) % total)
   }
 
+  const saveScroll = useCallback(() => {
+    sessionStorage.setItem('prop-list-scroll', String(window.scrollY))
+  }, [])
+
   return (
-    <Link href={`/propiedades/${property.id}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm md:hover:shadow-md md:hover:-translate-y-1 transition-all duration-200">
+    <Link href={`/propiedades/${property.id}`} onClick={saveScroll} className="group block bg-white rounded-xl overflow-hidden shadow-sm md:hover:shadow-md md:hover:-translate-y-1 transition-all duration-200">
       <div
         className="relative h-52 overflow-hidden bg-gray-100"
         onTouchStart={total > 1 ? handleTouchStart : undefined}

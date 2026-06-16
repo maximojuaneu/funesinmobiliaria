@@ -1,10 +1,22 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { TokkoProperty } from '@/types/tokko'
 import { getOperationPrice } from '@/lib/tokko'
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)')
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
 
 const TYPE_ES: Record<string, string> = {
   'House': 'Casa', 'Apartment': 'Departamento', 'Land': 'Terreno / Lote',
@@ -35,12 +47,13 @@ function CompactPropertyCard({ property }: { property: TokkoProperty }) {
   const address = property.fake_address || property.address
   const stats = getStats(property)
   const typeName = TYPE_ES[property.type?.name] ?? property.type?.name
+  const isMobile = useIsMobile()
 
   return (
     <Link
       href={`/propiedades/${property.id}`}
-      target="_blank"
-      rel="noopener noreferrer"
+      target={isMobile ? '_self' : '_blank'}
+      rel={isMobile ? undefined : 'noopener noreferrer'}
       className="flex gap-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
     >
       <div className="relative w-32 h-24 flex-shrink-0 bg-gray-100">
