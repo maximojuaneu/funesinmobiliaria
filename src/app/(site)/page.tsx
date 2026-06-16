@@ -15,7 +15,7 @@ export default async function HomePage() {
   return (
     <>
       {/* HERO */}
-      <section className="relative min-h-[82vh] flex items-center justify-center overflow-hidden pt-20 pb-10 md:pb-0">
+      <section className="relative min-h-[82vh] flex items-start md:items-center justify-center overflow-hidden pt-28 md:pt-20 pb-10 md:pb-0">
         <HeroVideo />
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/60" />
         <div className="relative z-10 text-center text-white px-6 w-full max-w-4xl mx-auto">
