@@ -8,14 +8,13 @@ import type {
 } from '@/types/tokko'
 import { OPERATION_ID } from '@/types/tokko'
 
-const BASE_URL = process.env.TOKKO_BASE_URL ?? 'https://www.tokkobroker.com/api/v1'
-const API_KEY  = process.env.TOKKO_API_KEY ?? ''
-
 // Normalize string: lowercase + remove accents (á→a, é→e, etc.)
 const normalize = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 async function tokkoFetch<T>(path: string, params: Record<string, string | number> = {}): Promise<T> {
+  const BASE_URL = process.env.TOKKO_BASE_URL ?? 'https://www.tokkobroker.com/api/v1'
+  const API_KEY  = process.env.TOKKO_API_KEY ?? ''
   const url = new URL(`${BASE_URL}${path}`)
   url.searchParams.set('key', API_KEY)
   url.searchParams.set('format', 'json')
