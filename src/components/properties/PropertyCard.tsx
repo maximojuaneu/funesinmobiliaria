@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { TokkoProperty } from '@/types/tokko'
@@ -93,19 +93,6 @@ export default function PropertyCard({ property, operationType }: Props) {
     setIdx(i => (i + 1) % total)
   }
 
-  const touchStartX = useRef<number | null>(null)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX
-  }
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    touchStartX.current = null
-    if (Math.abs(dx) < 40) return
-    if (dx < 0) setIdx(i => (i + 1) % total)
-    else setIdx(i => (i - 1 + total) % total)
-  }
-
   const saveScroll = useCallback(() => {
     sessionStorage.setItem('prop-list-scroll', String(window.scrollY))
   }, [])
@@ -114,8 +101,6 @@ export default function PropertyCard({ property, operationType }: Props) {
     <Link href={`/propiedades/${property.id}`} onClick={saveScroll} className="group block bg-white rounded-xl overflow-hidden shadow-sm md:hover:shadow-md md:hover:-translate-y-1 transition-all duration-200">
       <div
         className="relative h-52 overflow-hidden bg-gray-100"
-        onTouchStart={total > 1 ? handleTouchStart : undefined}
-        onTouchEnd={total > 1 ? handleTouchEnd : undefined}
       >
 
         {/* Pre-render all 3 real photos — instant switching via opacity */}

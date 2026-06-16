@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import { getAllActiveProperties } from '@/lib/tokko'
 
 const PROPERTY_ID = process.env.GA_PROPERTY_ID ?? ''
 
@@ -200,11 +201,23 @@ export async function getAnalyticsData(startDate: string, endDate: string): Prom
       return { label: PAGE_LABEL[path] ?? path, path, views: n(r.metricValues?.[0]?.value) }
     })
 
+    const allProperties = await getAllActiveProperties().catch(() => [])
+    const propById = new Map(allProperties.map(p => [String(p.id), p]))
+
     const propertyPages: GaProperty[] = (propPagesRes.data.rows ?? []).map(r => {
       const path  = r.dimensionValues?.[0]?.value ?? ''
       const title = r.dimensionValues?.[1]?.value ?? path
       const id    = path.split('/').pop() ?? ''
-      return { label: title.replace(' | Funes Inmobiliaria', '').trim(), path, id, views: n(r.metricValues?.[0]?.value) }
+      const prop  = propById.get(id)
+      let label: string
+      if (prop) {
+        const address = prop.fake_address || prop.address || ''
+        const city    = prop.location?.name || ''
+        label = address && city ? `${address} - ${city}` : address || city || title.replace(' | Funes Inmobiliaria', '').trim()
+      } else {
+        label = title.replace(' | Funes Inmobiliaria', '').trim()
+      }
+      return { label, path, id, views: n(r.metricValues?.[0]?.value) }
     })
 
     const totalSessions = (sourcesRes.data.rows ?? []).reduce((s, r) => s + n(r.metricValues?.[0]?.value), 0)

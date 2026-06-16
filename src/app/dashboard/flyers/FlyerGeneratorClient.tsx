@@ -129,16 +129,17 @@ export default function FlyerGeneratorClient() {
       canvas.height = H
       const ctx = canvas.getContext('2d')!
 
-      await document.fonts.ready
       try {
-        const euroFont = new (window as any).FontFace('Eurostile', 'url(/fonts/Eurostile.ttf)')
-        await euroFont.load()
-        ;(document as any).fonts.add(euroFont)
+        const euroFont = new FontFace('Eurostile', 'url(/fonts/Eurostile.ttf)')
+        const loadedEuro = await euroFont.load()
+        document.fonts.add(loadedEuro)
+        await document.fonts.load(`700 ${TITLE_FS}px Eurostile`)
       } catch {}
       try {
-        const montLight = new (window as any).FontFace('MontserratLight', 'url(/fonts/Montserrat-Light.otf)')
-        await montLight.load()
-        ;(document as any).fonts.add(montLight)
+        const montLight = new FontFace('MontserratLight', 'url(/fonts/Montserrat-Light.otf)')
+        const loadedMont = await montLight.load()
+        document.fonts.add(loadedMont)
+        await document.fonts.load(`400 ${ADDR_FS}px MontserratLight`)
       } catch {}
 
       // ── Zone constants ────────────────────────────────────────────────────
