@@ -23,7 +23,7 @@ export default function HeroVideo() {
   const preloadedRef  = useRef(false)
 
   useEffect(() => {
-    indexRef.current = Math.floor(Math.random() * VIDEOS.length)
+    indexRef.current = 0
     setMounted(true)
   }, [])
 
