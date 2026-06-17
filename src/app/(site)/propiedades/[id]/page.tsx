@@ -149,7 +149,7 @@ export default async function PropertyPage({ params }: Props) {
           </div>
 
           {/* Characteristics grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
             {(isCampo ? [
               { label: 'Superficie',        val: toHa(property.surface) ? `${toHa(property.surface)} ha` : toHa(property.total_surface) ? `${toHa(property.total_surface)} ha` : null },
               { label: 'Metros de frente',  val: frente ? `${frente} m` : null },
@@ -167,8 +167,8 @@ export default async function PropertyPage({ params }: Props) {
               { label: 'Cocheras',          val: property.parking_lot_amount || null },
               { label: 'Antigüedad',        val: property.age ? `${property.age} años` : null },
             ]).filter(i => i.val !== null).map(item => (
-              <div key={item.label} className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
-                <p className="text-2xl font-bold text-gray-900">{item.val}</p>
+              <div key={item.label} className="bg-gray-50 rounded-xl p-2 sm:p-4 text-center border border-gray-100">
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{item.val}</p>
                 <p className="text-xs text-gray-500 mt-1">{item.label}</p>
               </div>
             ))}
@@ -327,7 +327,7 @@ export default async function PropertyPage({ params }: Props) {
               <div className="rounded-xl overflow-hidden h-64 bg-gray-100">
                 <iframe
                   title="Mapa"
-                  width="100%" height="100%" loading="lazy" style={{ border: 0 }}
+                  width="100%" height="100%" loading="eager" style={{ border: 0 }}
                   src={`https://maps.google.com/maps?q=${property.geo_lat},${property.geo_long}&z=15&output=embed`}
                 />
               </div>

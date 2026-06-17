@@ -35,7 +35,7 @@ export default function PhotoGallery({ photos, title }: Props) {
   return (
     <>
       {/* ── Thumbnail grid ── */}
-      <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden h-[480px]">
+      <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden h-[260px] sm:h-[480px]">
         <button onClick={() => setOpen(true)} className="col-span-3 row-span-2 relative overflow-hidden group">
           <Image src={photos[0].image} alt={title} fill priority className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="75vw" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
