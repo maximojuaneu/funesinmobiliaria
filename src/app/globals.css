@@ -27,6 +27,8 @@
   body {
     @apply text-gray-900 bg-white;
     font-family: var(--font-montserrat), sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Eurostile en todos los headings */
