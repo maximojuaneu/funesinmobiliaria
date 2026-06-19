@@ -11,7 +11,7 @@ interface Stat {
 
 const stats: Stat[] = [
   { prefix: '+', end: 45, label: 'Años de experiencia' },
-  { prefix: '+', end: 1000, label: 'Propiedades vendidas' },
+  { prefix: '+', end: 1000, label: 'Operaciones concretadas' },
   { end: null, symbol: '✓', label: 'Corredores matriculados' },
 ]
 
