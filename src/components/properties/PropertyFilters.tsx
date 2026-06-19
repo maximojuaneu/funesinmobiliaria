@@ -174,7 +174,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
 
       {/* Barrio */}
       <div className="space-y-1">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Barrio / Ciudad</label>
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dirección / Barrio / Ciudad</label>
         <input
           className="input-field"
           placeholder="Ej: Funes, Roldán, Rosario"
@@ -258,9 +258,9 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
           </select>
         </div>
 
-        {/* Barrio / Ciudad — Enter aplica filtros */}
+        {/* Dirección / Barrio / Ciudad — Enter aplica filtros */}
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Barrio / Ciudad</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dirección / Barrio / Ciudad</label>
           <input
             className="input-field"
             placeholder="Ej: Funes, Roldán, Rosario"

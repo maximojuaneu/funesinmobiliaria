@@ -108,14 +108,24 @@ export default function FeaturedCarousel({ properties }: { properties: TokkoProp
       track.style.cursor = 'grab'
     }
 
+    // Trackpad two-finger horizontal scroll
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) return // ignore vertical scroll
+      e.preventDefault()
+      xRef.current -= e.deltaX
+      velocityRef.current = -e.deltaX * 0.3
+    }
+
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup',   onMouseUp)
+    track.addEventListener('wheel', onWheel, { passive: false })
 
     rafRef.current = requestAnimationFrame(tick)
     return () => {
       cancelAnimationFrame(rafRef.current)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup',   onMouseUp)
+      track.removeEventListener('wheel', onWheel)
     }
   }, [properties.length])
 

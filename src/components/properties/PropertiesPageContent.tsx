@@ -12,7 +12,7 @@ const SCROLL_KEY = 'prop-list-scroll'
 
 const PAGE_SIZE = 24
 
-type SortKey = 'recent' | 'price_asc' | 'price_desc'
+type SortKey = 'featured' | 'recent' | 'price_asc' | 'price_desc'
 
 interface Props {
   properties: TokkoProperty[]
@@ -69,7 +69,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [view, setView] = useState<'list' | 'map'>(initialView)
-  const [sort, setSort] = useState<SortKey>('recent')
+  const [sort, setSort] = useState<SortKey>('featured')
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') ?? '1', 10)
     return isNaN(p) || p < 1 ? 1 : p
@@ -111,6 +111,14 @@ export default function PropertiesPageContent({ properties, operationType, initi
 
   const sorted = useMemo(() => {
     const arr = [...properties]
+    if (sort === 'featured') {
+      return arr.sort((a, b) => {
+        const aF = a.is_starred_on_web ? 1 : 0
+        const bF = b.is_starred_on_web ? 1 : 0
+        if (aF !== bF) return bF - aF   // destacadas primero
+        return b.id - a.id              // dentro de cada grupo: más recientes primero
+      })
+    }
     if (sort === 'recent') return arr
     return arr.sort((a, b) => {
       const pa = getOperationPrice(a, baseOpType)?.amount ?? 0
@@ -246,6 +254,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
                   onChange={e => setSort(e.target.value as SortKey)}
                   className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-8 text-sm font-semibold text-gray-700 shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-green/30"
                 >
+                  <option value="featured">Destacadas primero</option>
                   <option value="recent">Más recientes</option>
                   <option value="price_asc">Menor precio</option>
                   <option value="price_desc">Mayor precio</option>
