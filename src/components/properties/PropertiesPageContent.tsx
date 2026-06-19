@@ -116,10 +116,15 @@ export default function PropertiesPageContent({ properties, operationType, initi
         const aF = a.is_starred_on_web ? 1 : 0
         const bF = b.is_starred_on_web ? 1 : 0
         if (aF !== bF) return bF - aF   // destacadas primero
-        return b.id - a.id              // dentro de cada grupo: más recientes primero
+        // dentro de cada grupo: más recientemente agregadas primero
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : a.id
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : b.id
+        return dateB - dateA
       })
     }
-    if (sort === 'recent') return arr
+    if (sort === 'recent') {
+      return arr.sort((a, b) => b.id - a.id)  // últimas cargadas primero, sin importar si son destacadas
+    }
     return arr.sort((a, b) => {
       const pa = getOperationPrice(a, baseOpType)?.amount ?? 0
       const pb = getOperationPrice(b, baseOpType)?.amount ?? 0
