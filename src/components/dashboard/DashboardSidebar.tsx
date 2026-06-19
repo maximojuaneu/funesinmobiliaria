@@ -30,12 +30,16 @@ interface SidebarProps {
   initialName: string
 }
 
+const INACTIVITY_MS = 5 * 60 * 1000 // 5 minutes
+
 export default function DashboardSidebar({ initialRole, initialName }: SidebarProps) {
   const pathname = usePathname()
   const router   = useRouter()
-  const [agent, setAgent]       = useState<AgentInfo>({ name: initialName, role: initialRole, picture: null })
-  const [dropOpen, setDropOpen] = useState(false)
-  const dropRef = useRef<HTMLDivElement>(null)
+  const [agent, setAgent]           = useState<AgentInfo>({ name: initialName, role: initialRole, picture: null })
+  const [dropOpen, setDropOpen]     = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
+  const dropRef     = useRef<HTMLDivElement>(null)
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -51,6 +55,28 @@ export default function DashboardSidebar({ initialRole, initialName }: SidebarPr
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Inactivity timeout
+  useEffect(() => {
+    const expire = async () => {
+      setSessionExpired(true)
+      await fetch('/api/auth/logout', { method: 'POST' })
+    }
+
+    const reset = () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(expire, INACTIVITY_MS)
+    }
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'] as const
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }))
+    reset()
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      events.forEach(e => window.removeEventListener(e, reset))
+    }
   }, [])
 
   const handleLogout = async () => {
@@ -100,6 +126,27 @@ export default function DashboardSidebar({ initialRole, initialName }: SidebarPr
           </button>
         </div>
       </aside>
+
+      {/* ── Session expired modal ── */}
+      {sessionExpired && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 mx-4 max-w-sm w-full text-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Tu sesión expiró</h2>
+            <p className="text-gray-500 text-sm mb-6">Por seguridad, cerramos tu sesión después de 5 minutos de inactividad.</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="w-full bg-brand-green text-white font-semibold py-3 rounded-xl hover:bg-brand-green/90 transition-colors"
+            >
+              Volver al ingreso
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Mobile top bar ── */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[2000] bg-brand-green text-white flex items-center justify-between px-4 h-14 shadow-md">

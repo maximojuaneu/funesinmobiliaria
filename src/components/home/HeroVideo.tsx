@@ -8,7 +8,8 @@ const VIDEOS = [
   '/hero-video-3.mp4',
 ]
 
-const FADE_MS = 1500
+const FADE_MS    = 1500
+const MAX_SECS   = 4   // max seconds per video
 
 export default function HeroVideo() {
   const [mounted, setMounted]         = useState(false)
@@ -41,10 +42,11 @@ export default function HeroVideo() {
   }
 
   function handleTimeUpdate(slot: 'a' | 'b') {
-    if (fadingRef.current || preloadedRef.current) return
     const video = (slot === 'a' ? refA : refB).current
-    if (!video || !isFinite(video.duration)) return
-    if (video.currentTime >= video.duration - 3) {
+    if (!video) return
+
+    // Preload next video 1 second before the cutoff
+    if (!preloadedRef.current && !fadingRef.current && video.currentTime >= MAX_SECS - 1) {
       preloadedRef.current = true
       const nextSlot: 'a' | 'b' = slot === 'a' ? 'b' : 'a'
       const nextIndex = (indexRef.current + 1) % VIDEOS.length
@@ -53,6 +55,12 @@ export default function HeroVideo() {
         nextVideo.src = VIDEOS[nextIndex]
         nextVideo.load()
       }
+    }
+
+    // Cut to next video at MAX_SECS regardless of actual video length
+    if (!fadingRef.current && video.currentTime >= MAX_SECS) {
+      video.pause()
+      handleEnded(slot)
     }
   }
 

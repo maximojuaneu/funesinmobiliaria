@@ -424,18 +424,22 @@ export default function FlyerGeneratorClient() {
   const download = () => {
     const canvas = canvasRef.current!
     const dataUrl = canvas.toDataURL('image/jpeg', 0.96)
+    const addr = property?.fake_address || property?.address || String(property?.id ?? 'prop')
+    const city = property?.location?.name ?? ''
+    const addrFull = city ? `${addr} - ${city}` : addr
+    const filename = `Flyer-${addrFull}`.replace(/[<>:"/\\|?*]/g, '').trim()
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
     if (isMobile) {
       // En mobile abrimos la imagen en nueva pestaña para guardar con pulsación larga
       const win = window.open()
       if (win) {
         win.document.write(`<img src="${dataUrl}" style="max-width:100%;display:block;margin:auto" />`)
-        win.document.title = `flyer-${property?.id ?? 'prop'}.jpg`
+        win.document.title = `${filename}.jpg`
       }
     } else {
       const link = document.createElement('a')
       link.href = dataUrl
-      link.download = `flyer-${property?.id ?? 'prop'}.jpg`
+      link.download = `${filename}.jpg`
       link.click()
     }
   }

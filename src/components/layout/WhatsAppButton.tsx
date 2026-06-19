@@ -1,7 +1,11 @@
 'use client'
+import { usePathname } from 'next/navigation'
 import { gtagEvent } from '@/lib/gtag'
 
 export default function WhatsAppButton({ href }: { href: string }) {
+  const pathname = usePathname()
+  if (/^\/propiedades\/[^/]+/.test(pathname)) return null
+
   return (
     <a
       href={href}

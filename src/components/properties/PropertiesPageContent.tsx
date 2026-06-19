@@ -156,7 +156,10 @@ export default function PropertiesPageContent({ properties, operationType, initi
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', String(p))
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // Double RAF ensures scroll runs after Safari processes the route change
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }))
   }
 
   return (
