@@ -114,6 +114,10 @@ export default function FirmaClient({ token }: { token: string }) {
   const generate = async () => {
     if (!data) return
     setLoading(true); setDone(false)
+
+    // Safari iOS blocks window.open() after any await — must open before async work
+    const pdfWindow = window.open('', '_blank')
+
     try {
       const firmaDataUrl = canvasRef.current?.toDataURL('image/png') ?? ''
 
@@ -134,11 +138,21 @@ export default function FirmaClient({ token }: { token: string }) {
 
       const blob = await pdf(<AutorizacionDocument data={docData} logoUrl={logoUrl} />).toBlob()
       const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url
-      a.download = `Autorización de Venta - ${data.inmuebleDir || 'propiedad'}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
+
+      if (pdfWindow) {
+        pdfWindow.location.href = url
+      } else {
+        // Fallback si el popup fue bloqueado (Chrome Desktop con bloqueador)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Autorización de Venta - ${data.inmuebleDir || 'propiedad'}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+
+      // Revocar después de que el navegador tenga tiempo de cargar el blob
+      setTimeout(() => URL.revokeObjectURL(url), 15000)
 
       const saveRes = await fetch('/api/autorizaciones/firmar', {
         method:  'POST',
@@ -155,6 +169,7 @@ export default function FirmaClient({ token }: { token: string }) {
       setSigned(true)
       setDone(true)
     } catch (err) {
+      if (pdfWindow && !pdfWindow.closed) pdfWindow.close()
       console.error(err)
       alert('Error al generar el documento. Intentá de nuevo.')
     } finally {
