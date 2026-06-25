@@ -315,8 +315,12 @@ export default function FlyerGeneratorClient() {
       }
 
       // Address — Montserrat Light, fixed at bottom of marble
-      const city     = property.location?.name ?? ''
-      const addrFull = city ? `${addr} - ${city}` : addr
+      // full_location format: "Santa Fe | Localidad | Sub-division"
+      const subdivision = property.location?.name ?? ''
+      const locParts    = (property.location?.full_location ?? '').split(' | ')
+      const localidad   = locParts.length >= 2 ? locParts[1] : ''
+      const addrParts   = [addr, subdivision, localidad].filter(Boolean)
+      const addrFull    = addrParts.join(' - ')
       ctx.fillStyle = '#067148'
       ctx.font = `400 ${ADDR_FS}px MontserratLight, Arial`
       ctx.fillText(fitText(ctx, addrFull, W - PAD * 3), W / 2, addrY)
