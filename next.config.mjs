@@ -4,6 +4,7 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   transpilePackages: ['react-leaflet', 'leaflet', 'leaflet.markercluster', '@react-leaflet/core'],
   images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: 'https', hostname: 'tokkobroker.com' },
       { protocol: 'https', hostname: '*.tokkobroker.com' },
