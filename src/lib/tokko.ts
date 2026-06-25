@@ -242,6 +242,14 @@ export async function getAgents(): Promise<TokkoAgent[]> {
   return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
+export async function getAgentById(id: number): Promise<TokkoAgent | null> {
+  try {
+    return await tokkoFetch<TokkoAgent>(`/user/${id}/`)
+  } catch {
+    return null
+  }
+}
+
 export interface ClosedOperation {
   id: number
   address: string

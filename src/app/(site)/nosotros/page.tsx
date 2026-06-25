@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getAgents, hasCustomAvatar } from '@/lib/tokko'
+import { getAgents, getAgentById, hasCustomAvatar } from '@/lib/tokko'
 import type { TokkoAgent } from '@/types/tokko'
 
 export const metadata: Metadata = {
@@ -10,10 +10,14 @@ export const metadata: Metadata = {
 }
 
 const DIRECTION_MEMBERS: { id: number; matricula: string; positionOverride?: string }[] = [
-  { id: 43421, matricula: 'C.I Mat 2708 - COCIR', positionOverride: 'Gerente' },
   { id: 43409, matricula: 'C.I Mat 0298 - COCIR' },
+  { id: 43421, matricula: 'C.I Mat 2708 - COCIR', positionOverride: 'Gerente' },
 ]
 const DIRECTION_IDS = DIRECTION_MEMBERS.map(m => m.id)
+
+const STATIC_TEAM: TokkoAgent[] = [
+  { id: -1, name: 'Micaela Hernandez', position: 'Administración', email: '', phone: '', picture: undefined },
+]
 
 function AgentInitials({ name }: { name: string }) {
   const initials = name.split(' ').slice(0, 2).map(n => n[0]).join('')
@@ -78,8 +82,17 @@ function TeamCard({ agent }: { agent: TokkoAgent }) {
 export default async function NosotrosPage() {
   let allAgents: TokkoAgent[] = []
   try { allAgents = await getAgents() } catch {}
+
+  const laureano = await getAgentById(43426)
+
   const direction = allAgents.filter(a => DIRECTION_IDS.includes(a.id))
-  const team = allAgents.filter(a => !DIRECTION_IDS.includes(a.id))
+
+  const tokkoTeam = allAgents.filter(a => !DIRECTION_IDS.includes(a.id) && a.id !== 43426)
+  const team: TokkoAgent[] = [
+    ...(laureano ? [laureano] : []),
+    ...tokkoTeam,
+    ...STATIC_TEAM,
+  ].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <>

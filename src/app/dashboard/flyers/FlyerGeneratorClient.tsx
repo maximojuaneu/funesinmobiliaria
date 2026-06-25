@@ -315,12 +315,12 @@ export default function FlyerGeneratorClient() {
       }
 
       // Address — Montserrat Light, fixed at bottom of marble
-      // full_location format: "Santa Fe | Localidad | Sub-division"
-      const subdivision = property.location?.name ?? ''
-      const locParts    = (property.location?.full_location ?? '').split(' | ')
-      const localidad   = locParts.length >= 2 ? locParts[1] : ''
-      const addrParts   = [addr, subdivision, localidad].filter(Boolean)
-      const addrFull    = addrParts.join(' - ')
+      // full_location format: "Argentina | Province | Localidad [| Sub-division]"
+      // addr from Tokko may already include the barrio (e.g. "Julio Giantenazo al 100 - Funes City")
+      // so we only append Localidad/Partido (always at index 2)
+      const locParts  = (property.location?.full_location ?? '').split(' | ').map(s => s.trim()).filter(Boolean)
+      const localidad = locParts.length >= 3 ? locParts[2] : locParts[locParts.length - 1] ?? ''
+      const addrFull  = localidad ? `${addr} - ${localidad}` : addr
       ctx.fillStyle = '#067148'
       ctx.font = `400 ${ADDR_FS}px MontserratLight, Arial`
       ctx.fillText(fitText(ctx, addrFull, W - PAD * 3), W / 2, addrY)

@@ -7,7 +7,7 @@ const COOKIE = 'fi_session'
 export interface SessionPayload {
   username: string
   name: string
-  role: 'admin' | 'agent'
+  role: 'admin' | 'agent' | 'designer'
   tokkoId: number | null
   picture: string | null
 }

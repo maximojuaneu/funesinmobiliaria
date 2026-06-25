@@ -1,4 +1,4 @@
-import { getAgents as getTokkoAgents } from './tokko'
+import { getAgents as getTokkoAgents, getAgentById } from './tokko'
 
 export function toUsername(name: string): string {
   return name
@@ -30,10 +30,13 @@ function validPicture(url: string | undefined): string | null {
 export interface ResolvedUser {
   username: string
   name: string
-  role: 'admin' | 'agent'
+  role: 'admin' | 'agent' | 'designer'
   tokkoId: number | null
   picture: string | null
 }
+
+// Tokko users with no assigned properties — fetched individually
+const DESIGNER_IDS = [43426] // Laureano Montederisia
 
 export async function resolveLogin(username: string, password: string): Promise<ResolvedUser | null> {
   const u = username.toLowerCase().trim()
@@ -68,6 +71,22 @@ export async function resolveLogin(username: string, password: string): Promise<
         username: agentUser,
         name:     agent.name,
         role:     'agent',
+        tokkoId:  agent.id,
+        picture:  validPicture(agent.picture),
+      }
+    }
+  }
+
+  // Designer accounts: Tokko users without property assignments
+  for (const id of DESIGNER_IDS) {
+    const agent = await getAgentById(id)
+    if (!agent) continue
+    const agentUser = toUsername(agent.name)
+    if (agentUser === u && toPassword(agentUser) === password) {
+      return {
+        username: agentUser,
+        name:     agent.name,
+        role:     'designer',
         tokkoId:  agent.id,
         picture:  validPicture(agent.picture),
       }

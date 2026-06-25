@@ -4,13 +4,15 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-const navItems = [
-  { label: 'Inicio',                       href: '/dashboard',                icon: '🏠', adminOnly: false },
-  { label: 'Mapa de operaciones cerradas', href: '/dashboard/mapa',          icon: '🗺️', adminOnly: false },
-  { label: 'Diseños y flyers',             href: '/dashboard/flyers',        icon: '🎨', adminOnly: false },
-  { label: 'Informe de tasación',          href: '/dashboard/tasaciones',    icon: '📋', adminOnly: false },
-  { label: 'Documentación de propiedades', href: '/dashboard/autorizaciones',icon: '📁', adminOnly: false },
-  { label: 'Métricas del sitio',           href: '/dashboard/metricas',      icon: '📊', adminOnly: true  },
+type Role = 'admin' | 'agent' | 'designer'
+
+const navItems: { label: string; href: string; icon: string; roles: Role[] }[] = [
+  { label: 'Inicio',                       href: '/dashboard',                icon: '🏠', roles: ['admin', 'agent'] },
+  { label: 'Mapa de operaciones cerradas', href: '/dashboard/mapa',          icon: '🗺️', roles: ['admin', 'agent'] },
+  { label: 'Diseños y flyers',             href: '/dashboard/flyers',        icon: '🎨', roles: ['admin', 'agent', 'designer'] },
+  { label: 'Informe de tasación',          href: '/dashboard/tasaciones',    icon: '📋', roles: ['admin', 'agent'] },
+  { label: 'Documentación de propiedades', href: '/dashboard/autorizaciones',icon: '📁', roles: ['admin', 'agent'] },
+  { label: 'Métricas del sitio',           href: '/dashboard/metricas',      icon: '📊', roles: ['admin', 'designer'] },
 ]
 
 interface AgentInfo { name: string; role: string; picture: string | null }
@@ -26,7 +28,7 @@ function AgentAvatar({ agent }: { agent: AgentInfo }) {
 }
 
 interface SidebarProps {
-  initialRole: 'admin' | 'agent'
+  initialRole: Role
   initialName: string
 }
 
@@ -84,8 +86,7 @@ export default function DashboardSidebar({ initialRole, initialName }: SidebarPr
     router.push('/login')
   }
 
-  const isAdmin = agent.role === 'admin'
-  const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin)
+  const visibleItems = navItems.filter(item => item.roles.includes(agent.role as Role))
 
   return (
     <>
@@ -117,7 +118,7 @@ export default function DashboardSidebar({ initialRole, initialName }: SidebarPr
               <AgentAvatar agent={agent} />
               <div className="min-w-0">
                 <p className="text-white/90 text-sm font-semibold truncate">{agent.name}</p>
-                <p className="text-white/50 text-xs capitalize">{agent.role === 'admin' ? 'Administrador' : 'Agente'}</p>
+                <p className="text-white/50 text-xs capitalize">{agent.role === 'admin' ? 'Administrador' : agent.role === 'designer' ? 'Diseñador' : 'Agente'}</p>
               </div>
             </div>
           )}
