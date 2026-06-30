@@ -216,11 +216,11 @@ export default function FlyerGeneratorClient() {
       } else if (isDepto) {
         const cub = parseFloat(String(property.roofed_surface || property.total_surface || 0))
         if (cub > 0) statsL1 = `${Math.round(cub)} m² cubiertos`
-        const rm    = property.suite_amount ?? 0
-        const rooms = property.room_amount
-        const isMono = rm === 0 || (rooms !== undefined && rooms <= 1)
+        const rm   = property.suite_amount ?? 0
         const bath = property.bathroom_amount || 0
-        const roomLabel = isMono ? 'Monoambiente' : `${rm} Dormitorio${rm !== 1 ? 's' : ''}`
+        const roomLabel = rm === 0
+          ? 'Monoambiente'
+          : `${rm} Dormitorio${rm !== 1 ? 's' : ''}`
         statsL2 = [roomLabel, bath > 0 ? `${bath} Baño${bath !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' - ')
       } else if (isLocal) {
         const cub = parseFloat(String(property.roofed_surface || 0))
