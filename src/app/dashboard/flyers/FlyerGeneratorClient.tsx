@@ -78,10 +78,11 @@ export default function FlyerGeneratorClient() {
   const [property,  setProperty]  = useState<any>(null)
   const [photos,    setPhotos]    = useState<string[]>([])
   const [selected,  setSelected]  = useState<string[]>([])
-  const [badges,    setBadges]    = useState<string[]>([])
-  const [loading,   setLoading]   = useState(false)
-  const [rendering, setRendering] = useState(false)
-  const [ready,     setReady]     = useState(false)
+  const [badges,        setBadges]        = useState<string[]>([])
+  const [customAddress, setCustomAddress] = useState('')
+  const [loading,       setLoading]       = useState(false)
+  const [rendering,     setRendering]     = useState(false)
+  const [ready,         setReady]         = useState(false)
 
   const BADGES = [
     { id: 'apta-credito', label: 'Apta Crédito' },
@@ -93,7 +94,7 @@ export default function FlyerGeneratorClient() {
     const id = propId.trim()
     if (!id) return
     setLoading(true)
-    setProperty(null); setPhotos([]); setSelected([]); setBadges([]); setReady(false)
+    setProperty(null); setPhotos([]); setSelected([]); setBadges([]); setCustomAddress(''); setReady(false)
     try {
       const res  = await fetch(`/api/tokko/property/${id}`)
       const data = await res.json()
@@ -103,6 +104,10 @@ export default function FlyerGeneratorClient() {
           .filter((p: any) => !p.is_blueprint && !p.is_floor_plan)
           .map((p: any) => p.image as string)
         setPhotos(imgs)
+        const rawAddr = data.fake_address || data.address || ''
+        const locParts = (data.location?.full_location ?? '').split(' | ').map((s: string) => s.trim()).filter(Boolean)
+        const localidad = locParts.length >= 3 ? locParts[2] : (locParts[locParts.length - 1] ?? '')
+        setCustomAddress(localidad ? `${rawAddr} - ${localidad}` : rawAddr)
       } else {
         alert('No se encontró la propiedad.')
       }
@@ -315,15 +320,9 @@ export default function FlyerGeneratorClient() {
       }
 
       // Address — Montserrat Light, fixed at bottom of marble
-      // full_location format: "Argentina | Province | Localidad [| Sub-division]"
-      // addr from Tokko may already include the barrio (e.g. "Julio Giantenazo al 100 - Funes City")
-      // so we only append Localidad/Partido (always at index 2)
-      const locParts  = (property.location?.full_location ?? '').split(' | ').map(s => s.trim()).filter(Boolean)
-      const localidad = locParts.length >= 3 ? locParts[2] : locParts[locParts.length - 1] ?? ''
-      const addrFull  = localidad ? `${addr} - ${localidad}` : addr
       ctx.fillStyle = '#067148'
       ctx.font = `400 ${ADDR_FS}px MontserratLight, Arial`
-      ctx.fillText(fitText(ctx, addrFull, W - PAD * 3), W / 2, addrY)
+      ctx.fillText(fitText(ctx, customAddress, W - PAD * 3), W / 2, addrY)
 
       // ── 4. SECONDARY PHOTOS + shadow from marble onto them ───────────────
       const pGap = 6
@@ -418,12 +417,12 @@ export default function FlyerGeneratorClient() {
     } finally {
       setRendering(false)
     }
-  }, [selected, property, badges])
+  }, [selected, property, badges, customAddress])
 
   useEffect(() => {
     if (selected.length >= 2) drawFlyer()
     else setReady(false)
-  }, [selected, badges, drawFlyer])
+  }, [selected, badges, customAddress, drawFlyer])
 
   const download = () => {
     const canvas = canvasRef.current!
@@ -588,6 +587,23 @@ export default function FlyerGeneratorClient() {
                 Quitar etiquetas
               </button>
             )}
+          </div>
+        )}
+
+        {/* Step 4 — Address */}
+        {property && (
+          <div className={`bg-white rounded-2xl p-6 shadow-sm border transition-colors ${customAddress ? 'border-brand-green' : 'border-gray-100'}`}>
+            <h2 className="font-bold mb-1 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-brand-green text-white text-xs flex items-center justify-center font-bold">4</span>
+              Dirección de la propiedad
+            </h2>
+            <p className="text-xs text-gray-500 mb-4 ml-8">Se muestra al pie del flyer. Podés editarla libremente.</p>
+            <input
+              className="input-field w-full"
+              value={customAddress}
+              onChange={e => setCustomAddress(e.target.value)}
+              placeholder="Ej: Av. Rivadavia 1234 - Rosario"
+            />
           </div>
         )}
       </div>
