@@ -25,7 +25,7 @@ function numToWords(n: number): string {
                   'diez','once','doce','trece','catorce','quince','dieciséis','diecisiete',
                   'dieciocho','diecinueve']
   const tens   = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
-  const veinte = ['','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco',
+  const veinte = ['veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco',
                   'veintiséis','veintisiete','veintiocho','veintinueve']
   const hunds  = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos',
                   'seiscientos','setecientos','ochocientos','novecientos']

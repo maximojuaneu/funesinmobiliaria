@@ -32,7 +32,7 @@ interface SidebarProps {
   initialName: string
 }
 
-const INACTIVITY_MS = 5 * 60 * 1000 // 5 minutes
+const INACTIVITY_MS = 20 * 60 * 1000 // 20 minutes
 
 export default function DashboardSidebar({ initialRole, initialName }: SidebarProps) {
   const pathname = usePathname()
@@ -138,7 +138,7 @@ export default function DashboardSidebar({ initialRole, initialName }: SidebarPr
               </svg>
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Tu sesión expiró</h2>
-            <p className="text-gray-500 text-sm mb-6">Por seguridad, cerramos tu sesión después de 5 minutos de inactividad.</p>
+            <p className="text-gray-500 text-sm mb-6">Por seguridad, cerramos tu sesión después de 20 minutos de inactividad.</p>
             <button
               onClick={() => router.push('/login')}
               className="w-full bg-brand-green text-white font-semibold py-3 rounded-xl hover:bg-brand-green/90 transition-colors"

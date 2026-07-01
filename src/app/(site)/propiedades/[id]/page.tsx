@@ -203,7 +203,7 @@ export default async function PropertyPage({ params }: Props) {
             >
               <a
                 href={agentWa
-                  ? `https://wa.me/${agentWa}?text=${encodeURIComponent(`Hola! Me interesa la propiedad: ${property.fake_address || property.address} (ID ${property.id})\n\n${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://funesinmobiliaria.com.ar'}/propiedades/${property.id}`)}`
+                  ? `https://wa.me/${agentWa}?text=${encodeURIComponent(`Hola! Me interesa la propiedad: ${property.fake_address || property.address} (ID ${property.id})\n\nhttps://funesinmobiliaria.com.ar/propiedades/${property.id}`)}`
                   : '#'}
                 target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 bg-[#25d366] text-white font-semibold py-3 px-4 rounded-lg w-full hover:bg-[#1ebe5a] transition-colors mb-3"
