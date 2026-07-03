@@ -38,6 +38,7 @@ export default function PropiedadesClient() {
   const [isAdmin,        setIsAdmin]        = useState(false)
 
   const [assignModal,   setAssignModal]   = useState<{ propId: string } | null>(null)
+  const [assignSearch,  setAssignSearch]  = useState('')
   const [search,        setSearch]        = useState('')
   const [authFilter,    setAuthFilter]    = useState<'all' | 'signed' | 'unsigned'>('all')
   const [agentFilter,   setAgentFilter]   = useState<string>('')
@@ -455,24 +456,38 @@ export default function PropiedadesClient() {
             ) : (
               <>
                 <p className="text-sm text-gray-500 mb-4">Seleccioná a qué propiedad asignar esta autorización.</p>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {unlinkedAuths.map(auth => (
-                    <div key={auth.id} className="mb-4">
-                      <p className="text-xs font-bold text-gray-500 uppercase mb-2">{auth.titularNombre} — {auth.inmuebleDir}</p>
-                      {propiedades.map(p => (
-                        <button key={p.id}
-                          onClick={() => assignAuth(p.id, auth.id)}
-                          className="w-full text-left bg-gray-50 hover:bg-brand-light rounded-xl px-4 py-2.5 transition mb-1.5">
-                          <p className="text-sm font-semibold text-gray-800">{p.address}</p>
-                          <p className="text-xs text-gray-400">{p.type}{p.price ? ` — ${fmtPrice(p.price, p.currency)}` : ''}</p>
-                        </button>
-                      ))}
-                    </div>
-                  ))}
+                <input
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 mb-3 focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition"
+                  placeholder="Buscar por dirección..."
+                  value={assignSearch}
+                  onChange={e => setAssignSearch(e.target.value)}
+                  autoFocus
+                />
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {unlinkedAuths.map(auth => {
+                    const filtered = propiedades.filter(p =>
+                      p.address.toLowerCase().includes(assignSearch.toLowerCase())
+                    )
+                    return (
+                      <div key={auth.id} className="mb-4">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">{auth.titularNombre} — {auth.inmuebleDir}</p>
+                        {filtered.length === 0 ? (
+                          <p className="text-sm text-gray-400 px-2">Sin resultados</p>
+                        ) : filtered.map(p => (
+                          <button key={p.id}
+                            onClick={() => { assignAuth(p.id, auth.id); setAssignSearch('') }}
+                            className="w-full text-left bg-gray-50 hover:bg-brand-light rounded-xl px-4 py-2.5 transition mb-1.5">
+                            <p className="text-sm font-semibold text-gray-800">{p.address}</p>
+                            <p className="text-xs text-gray-400">{p.type}{p.price ? ` — ${fmtPrice(p.price, p.currency)}` : ''}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })}
                 </div>
               </>
             )}
-            <button onClick={() => setAssignModal(null)}
+            <button onClick={() => { setAssignModal(null); setAssignSearch('') }}
               className="mt-4 w-full py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">
               Cancelar
             </button>
