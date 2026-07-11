@@ -2,97 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-const VIDEOS = [
-  '/hero-video.mp4',
-  '/hero-video-2.mp4',
-  '/hero-video-3.mp4',
-]
-
-const FADE_MS    = 1500
-const MAX_SECS   = 4   // max seconds per video
-
 export default function HeroVideo() {
-  const [mounted, setMounted]         = useState(false)
+  const [mounted, setMounted]           = useState(false)
   const [videoVisible, setVideoVisible] = useState(false)
-  const [front, setFront]             = useState<'a' | 'b'>('a')
-  const [opacityA, setOpacityA]       = useState(1)
-  const [opacityB, setOpacityB]       = useState(0)
-  const refA          = useRef<HTMLVideoElement>(null)
-  const refB          = useRef<HTMLVideoElement>(null)
-  const indexRef      = useRef(0)
-  const fadingRef     = useRef(false)
-  const preloadedRef  = useRef(false)
+  const ref = useRef<HTMLVideoElement>(null)
 
-  useEffect(() => {
-    indexRef.current = 0
-    setMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!mounted) return
-    const v = refA.current
+    const v = ref.current
     if (!v) return
-    v.src = VIDEOS[indexRef.current]
-    v.load()
     v.play().catch(() => {})
   }, [mounted])
-
-  function handleCanPlay() {
-    if (!videoVisible) setVideoVisible(true)
-  }
-
-  function handleTimeUpdate(slot: 'a' | 'b') {
-    const video = (slot === 'a' ? refA : refB).current
-    if (!video) return
-
-    // Preload next video 1 second before the cutoff
-    if (!preloadedRef.current && !fadingRef.current && video.currentTime >= MAX_SECS - 1) {
-      preloadedRef.current = true
-      const nextSlot: 'a' | 'b' = slot === 'a' ? 'b' : 'a'
-      const nextIndex = (indexRef.current + 1) % VIDEOS.length
-      const nextVideo = (nextSlot === 'a' ? refA : refB).current
-      if (nextVideo) {
-        nextVideo.src = VIDEOS[nextIndex]
-        nextVideo.load()
-      }
-    }
-
-    // Cut to next video at MAX_SECS regardless of actual video length
-    if (!fadingRef.current && video.currentTime >= MAX_SECS) {
-      video.pause()
-      handleEnded(slot)
-    }
-  }
-
-  function handleEnded(slot: 'a' | 'b') {
-    if (fadingRef.current) return
-    fadingRef.current = true
-    preloadedRef.current = false
-
-    const nextSlot: 'a' | 'b' = slot === 'a' ? 'b' : 'a'
-    const nextIndex = (indexRef.current + 1) % VIDEOS.length
-    indexRef.current = nextIndex
-
-    const nextVideo = (nextSlot === 'a' ? refA : refB).current
-    if (nextVideo) {
-      if (!nextVideo.src.endsWith(VIDEOS[nextIndex])) {
-        nextVideo.src = VIDEOS[nextIndex]
-        nextVideo.load()
-      }
-      nextVideo.play().catch(() => {})
-    }
-
-    if (slot === 'a') {
-      setOpacityA(0)
-      setOpacityB(1)
-    } else {
-      setOpacityA(1)
-      setOpacityB(0)
-    }
-    setFront(nextSlot)
-
-    setTimeout(() => { fadingRef.current = false }, FADE_MS + 100)
-  }
 
   return (
     <div className="absolute inset-0 w-full h-full">
@@ -102,37 +24,20 @@ export default function HeroVideo() {
         style={{ backgroundImage: "url('/vista-aerea-banner.jpg')" }}
       />
 
-      {/* Videos solo en cliente, con fade-in suave cuando están listos */}
       {mounted && (
-        <>
-          <video
-            ref={refA}
-            muted
-            playsInline
-            onCanPlay={handleCanPlay}
-            onTimeUpdate={() => handleTimeUpdate('a')}
-            onEnded={() => handleEnded('a')}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              opacity: videoVisible ? opacityA : 0,
-              transition: `opacity ${FADE_MS}ms ease-in-out`,
-              zIndex: front === 'a' ? 1 : 0,
-            }}
-          />
-          <video
-            ref={refB}
-            muted
-            playsInline
-            onTimeUpdate={() => handleTimeUpdate('b')}
-            onEnded={() => handleEnded('b')}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              opacity: videoVisible ? opacityB : 0,
-              transition: `opacity ${FADE_MS}ms ease-in-out`,
-              zIndex: front === 'b' ? 1 : 0,
-            }}
-          />
-        </>
+        <video
+          ref={ref}
+          src="/hero-video-2.mp4"
+          muted
+          loop
+          playsInline
+          onCanPlay={() => setVideoVisible(true)}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            opacity: videoVisible ? 1 : 0,
+            transition: 'opacity 1500ms ease-in-out',
+          }}
+        />
       )}
     </div>
   )
