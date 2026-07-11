@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { appendPostulationToSheet } from '@/lib/sheets'
 import { Resend } from 'resend'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 3, 60_000)
+  if (limited) return limited
+
   try {
     const data = await req.json()
     const required = ['nombre', 'edad', 'whatsapp', 'email', 'ciudad', 'corredor', 'comision', 'experiencia', 'movilidad', 'club', 'colegio', 'personalidad', 'motivacion', 'emprendimiento', 'fulltime', 'respaldo']

@@ -8,8 +8,8 @@ import ContactTracker from '@/components/properties/ContactTracker'
 
 export const fetchCache = 'force-no-store'
 
-// Sanitize description: keep only <u>, <em>, <i>, <br>, <p>, <ul>, <ol>, <li>.
-// Strips bold tags, headings, style/class attributes so formatting stays uniform.
+const ALLOWED_TAGS = new Set(['u', 'em', 'i', 'br', 'p', 'ul', 'ol', 'li'])
+
 function formatDescription(text: string): string {
   if (!text) return ''
   const hasHtml = /<[a-z][\s\S]*>/i.test(text)
@@ -24,30 +24,27 @@ function formatDescription(text: string): string {
       .replace(/\n/g, '<br>') + '</p>'
   }
   return text
-    // Normalize line endings first
     .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-    // Strip bold tags but keep their content
+    // Convert semantic tags to allowed equivalents before stripping
     .replace(/<\/?(b|strong)[^>]*>/gi, '')
-    // Remove style and class attributes from any remaining tag
-    .replace(/\s+style=["'][^"']*["']/gi, '')
-    .replace(/\s+class=["'][^"']*["']/gi, '')
-    // Strip font tags but keep their content
     .replace(/<\/?font[^>]*>/gi, '')
-    // Convert headings to plain paragraphs (keep content, lose size)
+    .replace(/<\/?span[^>]*>/gi, '')
     .replace(/<h[1-6][^>]*>/gi, '<p>')
     .replace(/<\/h[1-6]>/gi, '</p>')
-    // Strip span tags but keep their content
-    .replace(/<\/?span[^>]*>/gi, '')
-    // Convert closing </div> to <br> so each Tokko line becomes a new line
     .replace(/<\/div>/gi, '<br>')
-    // Strip remaining opening <div> tags
     .replace(/<div[^>]*>/gi, '')
-    // Convert bare newlines to <br>
+    // Strip all remaining tags that are not in the allowlist
+    .replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (match, tag: string) => {
+      if (ALLOWED_TAGS.has(tag.toLowerCase())) {
+        // Keep the tag but strip all attributes (no onclick, href, etc.)
+        const closing = match.trimStart().startsWith('</')
+        return closing ? `</${tag.toLowerCase()}>` : `<${tag.toLowerCase()}>`
+      }
+      return ''
+    })
     .replace(/\n\n+/g, '<br><br>')
     .replace(/\n/g, '<br>')
-    // Collapse 3+ consecutive <br> down to two
     .replace(/(<br\s*\/?>[\s]*){3,}/gi, '<br><br>')
-    // Remove leading <br> at the very start
     .replace(/^(<br\s*\/?>[\s]*)*/i, '')
 }
 

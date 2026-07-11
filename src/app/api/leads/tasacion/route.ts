@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { appendLeadToSheet } from '@/lib/sheets'
 import { Resend } from 'resend'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 5, 60_000)
+  if (limited) return limited
+
   try {
     const data = await req.json()
     const required = ['nombre', 'motivo', 'tipo', 'direccion', 'telefono', 'email']

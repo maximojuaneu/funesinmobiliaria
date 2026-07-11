@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
   const url = req.nextUrl.searchParams.get('url')
   if (!url) return NextResponse.json({ error: 'url requerida' }, { status: 400 })
 
@@ -79,10 +83,35 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Proxy para imágenes (evita CORS al convertir a base64 en el cliente)
+const ALLOWED_IMAGE_DOMAINS = [
+  'tokkobroker.com',
+  'cdn1.tokkobroker.com',
+  'cdn2.tokkobroker.com',
+  'photos.tokkobroker.com',
+]
+
+function isAllowedImageUrl(raw: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(raw)
+    if (protocol !== 'https:' && protocol !== 'http:') return false
+    return ALLOWED_IMAGE_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`))
+  } catch {
+    return false
+  }
+}
+
+// Proxy para imágenes de Tokko (evita CORS al convertir a base64 en el cliente)
 export async function POST(req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
   const { imageUrl } = await req.json() as { imageUrl: string }
   if (!imageUrl) return NextResponse.json({ error: 'imageUrl requerida' }, { status: 400 })
+
+  if (!isAllowedImageUrl(imageUrl)) {
+    return NextResponse.json({ error: 'Dominio de imagen no permitido' }, { status: 400 })
+  }
+
   try {
     const res = await fetch(imageUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0' },

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { signToken, COOKIE } from '@/lib/auth'
 import { resolveLogin } from '@/lib/agents'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, 10, 15 * 60_000)
+  if (limited) return limited
+
   const { username, password } = await req.json()
 
   const user = await resolveLogin(username, password)
