@@ -11,6 +11,7 @@ interface AutorizacionForm {
   precio:         string
   precioLetras:   string
   exclusividad:   boolean
+  periodo:        string
   fecha:          string
 }
 
@@ -87,6 +88,7 @@ export default function AutorizacionClient() {
     precio:         '',
     precioLetras:   '',
     exclusividad:   false,
+    periodo:        '180',
     fecha:          todayAR(),
   })
   const [link,        setLink]        = useState('')
@@ -181,13 +183,28 @@ export default function AutorizacionClient() {
             {form.exclusividad ? '✓ Con exclusividad' : 'Sin exclusividad'}
           </button>
         </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Período (días)
+          </label>
+          <input
+            type="number" min="1" inputMode="numeric"
+            value={form.periodo}
+            onChange={e => set('periodo')(e.target.value.replace(/\D/g, '') || '1')}
+            onWheel={e => e.currentTarget.blur()}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+        </div>
         <div className="col-span-2 flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5">
           <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span className="text-sm text-gray-600">
-            Fecha del documento: <strong className="text-gray-800">{form.fecha}</strong>
-          </span>
+          <span className="text-sm text-gray-600 shrink-0">Fecha del documento:</span>
+          <input
+            type="text" value={form.fecha} placeholder="dd/mm/aaaa"
+            onChange={e => set('fecha')(e.target.value)}
+            className="bg-transparent text-sm font-bold text-gray-800 focus:outline-none w-28"
+          />
         </div>
       </Section>
 

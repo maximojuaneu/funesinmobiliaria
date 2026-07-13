@@ -17,6 +17,12 @@ function getDrive() {
   return google.drive({ version: 'v3', auth: getAuth() })
 }
 
+export function getAutorizacionesFolder(): string {
+  const id = process.env.GOOGLE_DRIVE_AUTORIZACIONES_FOLDER_ID
+  if (!id) throw new Error('GOOGLE_DRIVE_AUTORIZACIONES_FOLDER_ID is not set')
+  return id
+}
+
 /** Get or create a subfolder inside ROOT_FOLDER named "Address - City" */
 export async function getOrCreatePropertyFolder(address: string, city: string): Promise<string> {
   const drive = getDrive()

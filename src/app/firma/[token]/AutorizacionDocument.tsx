@@ -72,6 +72,7 @@ export interface AutorizacionData {
   precio:         string
   precioLetras:   string
   exclusividad:   boolean
+  periodo?:       string
   fecha:          string
   // filled by client
   titularNombre:  string
@@ -79,6 +80,24 @@ export interface AutorizacionData {
   titularTel:     string
   titularEmail:   string
   firmaDataUrl:   string
+}
+
+function daysToWords(n: number): string {
+  if (!isFinite(n) || n <= 0) return ''
+  const ones   = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve',
+                  'diez','once','doce','trece','catorce','quince','dieciséis','diecisiete',
+                  'dieciocho','diecinueve']
+  const tens   = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
+  const veinte = ['veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco',
+                  'veintiséis','veintisiete','veintiocho','veintinueve']
+  const hunds  = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos',
+                  'seiscientos','setecientos','ochocientos','novecientos']
+  let x = Math.floor(n); let r = ''
+  if (x === 100) return 'cien'
+  if (x >= 100) { r += hunds[Math.floor(x / 100)] + ' '; x %= 100 }
+  if (x >= 20)  { r += (x < 30 ? veinte[x - 20] : tens[Math.floor(x / 10)] + (x % 10 ? ' y ' + ones[x % 10] : '')) }
+  else if (x > 0) r += ones[x]
+  return r.trim()
 }
 
 function parseFecha(fecha: string) {
@@ -99,6 +118,8 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
   const partida = data.partida        || '.............................................................................'
   const precio  = data.precio         || '……………'
   const pLetras = data.precioLetras   ? `${data.precioLetras} dólares` : '……………………………………………………………'
+  const periodoNum = parseInt(data.periodo || '180') || 180
+  const periodoText = `${daysToWords(periodoNum)} (${periodoNum}) días`
 
   return (
     <Document title="Autorización de Venta" author="Funes Inmobiliaria">
@@ -138,7 +159,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
 
         <Text style={s.body}>
           {'La presente autorización es amplia e irrevocablemente valida por '}
-          <Text style={s.bold}>ciento ochenta (180) días</Text>
+          <Text style={s.bold}>{periodoText}</Text>
           {' a partir del '}
           <Text style={s.underline}>{dia}</Text>
           {' de '}

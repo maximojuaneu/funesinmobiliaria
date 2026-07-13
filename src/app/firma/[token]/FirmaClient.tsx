@@ -13,7 +13,26 @@ interface TokenData {
   precio:         string
   precioLetras:   string
   exclusividad:   boolean
+  periodo?:       string
   fecha:          string
+}
+
+function daysToWords(n: number): string {
+  if (!isFinite(n) || n <= 0) return ''
+  const ones   = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve',
+                  'diez','once','doce','trece','catorce','quince','dieciséis','diecisiete',
+                  'dieciocho','diecinueve']
+  const tens   = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
+  const veinte = ['veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco',
+                  'veintiséis','veintisiete','veintiocho','veintinueve']
+  const hunds  = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos',
+                  'seiscientos','setecientos','ochocientos','novecientos']
+  let x = Math.floor(n); let r = ''
+  if (x === 100) return 'cien'
+  if (x >= 100) { r += hunds[Math.floor(x / 100)] + ' '; x %= 100 }
+  if (x >= 20)  { r += (x < 30 ? veinte[x - 20] : tens[Math.floor(x / 10)] + (x % 10 ? ' y ' + ones[x % 10] : '')) }
+  else if (x > 0) r += ones[x]
+  return r.trim()
 }
 
 function parseFechaLegible(fecha: string) {
@@ -154,6 +173,15 @@ export default function FirmaClient({ token }: { token: string }) {
       // Revocar después de que el navegador tenga tiempo de cargar el blob
       setTimeout(() => URL.revokeObjectURL(url), 15000)
 
+      // Subir PDF a Google Drive (fire-and-forget, no bloquea el flujo)
+      const driveForm = new FormData()
+      driveForm.append('pdf', blob, `Autorizacion venta ${data.inmuebleDir} - ${data.inmuebleCiudad}.pdf`)
+      driveForm.append('address', data.inmuebleDir)
+      driveForm.append('city', data.inmuebleCiudad)
+      driveForm.append('token', token)
+      fetch('/api/autorizaciones/firmar-drive', { method: 'POST', body: driveForm })
+        .catch(err => console.error('Drive upload error:', err))
+
       const saveRes = await fetch('/api/autorizaciones/firmar', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,11 +234,13 @@ export default function FirmaClient({ token }: { token: string }) {
     </div>
   )
 
-  const { fecha, inmuebleDir, inmuebleCiudad, provincia, partida, precio, precioLetras, exclusividad, agenteNombre } = data
+  const { fecha, inmuebleDir, inmuebleCiudad, provincia, partida, precio, precioLetras, exclusividad, agenteNombre, periodo } = data
   const dia = String(parseInt(fecha.split('/')[0] ?? ''))
   const mes = (['enero','febrero','marzo','abril','mayo','junio',
                 'julio','agosto','septiembre','octubre','noviembre','diciembre'])[parseInt(fecha.split('/')[1] ?? '1') - 1] ?? ''
   const año = fecha.split('/')[2] ?? ''
+  const periodoNum = parseInt(periodo || '180') || 180
+  const periodoText = `${daysToWords(periodoNum)} (${periodoNum}) días`
 
   const isReady = nombre.trim() && dni.trim() && celular.trim() && email.trim() && hasSigned
 
@@ -269,7 +299,7 @@ export default function FirmaClient({ token }: { token: string }) {
 
             <p>
               La presente autorización es amplia e irrevocablemente valida por{' '}
-              <strong>ciento ochenta (180) días</strong> a partir del{' '}
+              <strong>{periodoText}</strong> a partir del{' '}
               <strong>{dia}</strong> de <strong>{mes}</strong> de <strong>{año}</strong>,
               quedando automáticamente prorrogada a partir del vencimiento por periodos de treinta
               días (30) sucesivos si no comunicara fehacientemente la voluntad de dejarla sin

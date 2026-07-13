@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { getDb } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
@@ -52,36 +51,6 @@ export async function POST(req: NextRequest) {
         record.propiedadId, record.firmaDataUrl,
       ],
     })
-
-    if (process.env.RESEND_API_KEY && record.agenteEmail) {
-      const resend = new Resend(process.env.RESEND_API_KEY)
-      await resend.emails.send({
-        from: 'Funes Inmobiliaria <onboarding@resend.dev>',
-        to:   record.agenteEmail,
-        subject: `✅ Autorización firmada: ${record.inmuebleDir} — ${record.titularNombre}`,
-        html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
-            <div style="background:#067148;padding:20px 24px;border-radius:8px 8px 0 0">
-              <h2 style="color:white;margin:0;font-size:18px">Autorización de Venta Firmada</h2>
-            </div>
-            <div style="background:#f9f9f9;padding:24px;border:1px solid #e5e5e5;border-radius:0 0 8px 8px">
-              <p style="margin:0 0 16px;color:#444">
-                Tu cliente <strong>${record.titularNombre}</strong> firmó la autorización de venta.<br>
-                Asignala a la propiedad correspondiente desde el dashboard.
-              </p>
-              <table style="border-collapse:collapse;width:100%;font-size:14px">
-                <tr><td style="padding:6px 12px;font-weight:600;background:#e6f4ee;width:40%">Inmueble</td><td style="padding:6px 12px">${record.inmuebleDir}, ${record.inmuebleCiudad}</td></tr>
-                <tr><td style="padding:6px 12px;font-weight:600;background:#e6f4ee">Titular</td><td style="padding:6px 12px">${record.titularNombre}</td></tr>
-                <tr><td style="padding:6px 12px;font-weight:600;background:#e6f4ee">DNI</td><td style="padding:6px 12px">${record.titularDNI}</td></tr>
-                <tr><td style="padding:6px 12px;font-weight:600;background:#e6f4ee">Precio</td><td style="padding:6px 12px">U$S ${record.precio}</td></tr>
-                <tr><td style="padding:6px 12px;font-weight:600;background:#e6f4ee">Exclusividad</td><td style="padding:6px 12px">${record.exclusividad ? '✅ Con exclusividad' : 'Sin exclusividad'}</td></tr>
-                <tr><td style="padding:6px 12px;font-weight:600;background:#e6f4ee">Firmado el</td><td style="padding:6px 12px">${record.fechaFirma}</td></tr>
-              </table>
-            </div>
-          </div>
-        `,
-      }).catch(err => console.error('Email error:', err))
-    }
 
     return NextResponse.json({ ok: true, id: record.id })
   } catch (err) {
