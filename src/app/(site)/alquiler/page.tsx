@@ -43,13 +43,9 @@ export default async function AlquilerPage({ searchParams }: Props) {
       <div className="page-hero">
         <div className="max-w-7xl mx-auto px-6">
           <span className="page-hero-eyebrow">Propiedades disponibles</span>
-          <div className="flex items-center gap-6 mb-4">
-            <div className="flex-1 h-px bg-gray-200" />
-            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-widest font-montserrat">
-              {isTemp ? 'Alquiler Temporario' : 'Alquiler'}
-            </h1>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-widest font-montserrat text-center mb-4">
+            {isTemp ? 'Alquiler Temporario' : 'Alquiler'}
+          </h1>
           <p className="text-center text-xs text-gray-600 tracking-widest uppercase">{result.count} propiedad{result.count !== 1 ? 'es' : ''} encontrada{result.count !== 1 ? 's' : ''}</p>
         </div>
       </div>
