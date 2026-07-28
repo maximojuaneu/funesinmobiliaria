@@ -225,15 +225,28 @@ export default function FlyerGeneratorClient() {
 
       if (isTerreno) {
         const fmt = (v: any) => parseFloat(v).toFixed(1).replace('.', ',')
-        if (property.front_measure) fillTextLS(ctx, `${fmt(property.front_measure)} m de frente`, TX,  TY_CARACT, LS_CARACT)
-        if (property.depth_measure) fillTextLS(ctx, `${fmt(property.depth_measure)} m de fondo`,  TX2, TY_CARACT, LS_CARACT)
+        const t1 = property.front_measure ? `${fmt(property.front_measure)} m de frente` : ''
+        const t2 = property.depth_measure ? `${fmt(property.depth_measure)} m de fondo`  : ''
+        if (t1) {
+          fillTextLS(ctx, t1, TX, TY_CARACT, LS_CARACT)
+          if (t2) {
+            const t1W = [...t1].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_CARACT, 0)
+            fillTextLS(ctx, t2, TX + t1W + 30, TY_CARACT, LS_CARACT)
+          }
+        } else if (t2) {
+          fillTextLS(ctx, t2, TX, TY_CARACT, LS_CARACT)
+        }
       } else if (!isCampo) {
         const c1 = rm === 0 ? 'Monoambiente' : `${rm} dormitorio${rm !== 1 ? 's' : ''}`
-        const c2 = bath   > 0 ? `${bath} baño${bath !== 1 ? 's' : ''}`          : ''
+        const c2 = bath   > 0 ? `${bath} baño${bath !== 1 ? 's' : ''}`        : ''
         const c3 = garage > 0 ? `${garage} cochera${garage !== 1 ? 's' : ''}` : (rm > 0 ? 'Living' : '')
-        fillTextLS(ctx, c1, TX,  TY_CARACT, LS_CARACT)
-        if (c2) fillTextLS(ctx, c2, TX2, TY_CARACT, LS_CARACT)
-        if (c3) fillTextLS(ctx, c3, TX3, TY_CARACT, LS_CARACT)
+        // Calcular ancho real de c1 para evitar overlap
+        const c1W = [...c1].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_CARACT, 0)
+        const dynTX2 = Math.max(TX2, TX + c1W + 30)
+        const dynTX3 = dynTX2 + (c2 ? [...c2].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_CARACT, 0) : 0) + 30
+        fillTextLS(ctx, c1, TX,      TY_CARACT, LS_CARACT)
+        if (c2) fillTextLS(ctx, c2, dynTX2, TY_CARACT, LS_CARACT)
+        if (c3) fillTextLS(ctx, c3, dynTX3, TY_CARACT, LS_CARACT)
       }
 
       // 6. Logo
