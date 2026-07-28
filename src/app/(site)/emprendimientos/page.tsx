@@ -21,7 +21,7 @@ export default async function EmprendimientosPage() {
           <span className="page-hero-eyebrow">Nuestros proyectos</span>
           <div className="flex items-center gap-4 mb-4">
             <div className="hidden sm:block flex-1 h-px bg-gray-200" />
-            <h1 className="w-full text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-wide sm:tracking-widest font-eurostile text-center">Emprendimientos</h1>
+            <h1 className="w-full text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-wide sm:tracking-widest font-montserrat text-center">Emprendimientos</h1>
             <div className="hidden sm:block flex-1 h-px bg-gray-200" />
           </div>
           <p className="text-center text-xs text-gray-600 tracking-widest uppercase">Invertí en los desarrollos más exclusivos de Funes y la región.</p>

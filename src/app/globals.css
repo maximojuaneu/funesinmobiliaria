@@ -57,9 +57,18 @@
     @apply border-b border-gray-200;
     padding-top: calc(80px + 48px);
     padding-bottom: 48px;
-    background-image: url('/marble.jpg');
+    background-image: url('/banner-hero.jpg');
     background-size: cover;
     background-position: center top;
+  }
+  .page-hero h1 {
+    font-family: var(--font-montserrat), sans-serif;
+    letter-spacing: 0.04em !important;
+  }
+  @media (max-width: 640px) {
+    .page-hero {
+      background-position: left top;
+    }
   }
   .page-hero-eyebrow {
     @apply text-gray-600 text-xs font-semibold uppercase tracking-widest block mb-4 text-center;

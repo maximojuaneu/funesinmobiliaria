@@ -14,7 +14,7 @@ export default function TasacionPage() {
           <span className="page-hero-eyebrow">Conocé el valor</span>
           <div className="flex items-center gap-4 mb-4">
             <div className="hidden sm:block flex-1 h-px bg-gray-200" />
-            <h1 className="w-full text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-wide sm:tracking-widest font-eurostile text-center">Tasá tu propiedad</h1>
+            <h1 className="w-full text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-wide sm:tracking-widest font-montserrat text-center">Tasá tu propiedad</h1>
             <div className="hidden sm:block flex-1 h-px bg-gray-200" />
           </div>
           <p className="text-center text-xs text-gray-600 tracking-widest uppercase">Completá el formulario y nuestro equipo se contactará con vos</p>

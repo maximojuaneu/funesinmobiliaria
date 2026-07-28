@@ -143,7 +143,7 @@ export default function SumatePage() {
       <div className="page-hero">
         <div className="max-w-2xl mx-auto text-center">
           <span className="page-hero-eyebrow">Trabajá con nosotros</span>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-widest font-eurostile">Sumate</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 uppercase tracking-widest font-montserrat">Sumate</h1>
           <p className="text-gray-500 mt-4">Completá el formulario y nos ponemos en contacto con vos.</p>
         </div>
       </div>
