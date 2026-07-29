@@ -163,14 +163,18 @@ export default async function PropertyPage({ params }: Props) {
               { label: 'Sup. semicubierta', val: supSemicub  ? `${supSemicub} m²`  : null },
               { label: 'Cocheras',          val: property.parking_lot_amount || null },
               { label: 'Antigüedad',        val: property.age ? `${property.age} años` : null },
+              { label: 'Orientación',       val: property.orientation || null, icon: '🧭' },
             ]).filter(i => i.val !== null).map(item => (
-              <div key={item.label} className="bg-gray-50 rounded-xl p-2 sm:p-4 text-center border border-gray-100">
+              <div key={item.label} className="bg-gray-50 rounded-xl p-2 sm:p-4 text-center border border-gray-100 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px]">
                 <p className="text-lg sm:text-2xl font-bold text-gray-900">{item.val}</p>
-                <p className="text-xs text-gray-500 mt-1">{item.label}</p>
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  {'icon' in item && item.icon && <span className="grayscale">{item.icon}</span>}
+                  {item.label}
+                </p>
               </div>
             ))}
             {isAptaCredito && (
-              <div className="bg-green-50 rounded-xl p-4 text-center border border-green-200">
+              <div className="bg-green-50 rounded-xl p-4 text-center border border-green-200 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px]">
                 <p className="text-lg font-bold text-brand-green">✓</p>
                 <p className="text-xs font-semibold text-brand-green mt-1 uppercase tracking-wide">Apta crédito</p>
               </div>
@@ -241,16 +245,20 @@ export default async function PropertyPage({ params }: Props) {
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Agente responsable</p>
               <div className="flex items-center gap-3">
-                {hasCustomAvatar(agent.picture)
-                  ? <Image src={agent.picture} alt={agent.name} width={52} height={52} className="rounded-full object-cover flex-shrink-0" style={{ width: 52, height: 52 }} />
-                  : <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center text-brand-green font-bold text-lg flex-shrink-0">
-                      {agent.name?.trim().split(/\s+/).filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
-                    </div>
-                }
+                <Link href={`/agentes/${agent.id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+                  {hasCustomAvatar(agent.picture)
+                    ? <Image src={agent.picture} alt={agent.name} width={52} height={52} className="rounded-full object-cover" style={{ width: 52, height: 52 }} />
+                    : <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center text-brand-green font-bold text-lg">
+                        {agent.name?.trim().split(/\s+/).filter(Boolean).map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
+                      </div>
+                  }
+                </Link>
                 <div>
-                  <p className="font-semibold text-gray-900">{agent.name}</p>
+                  <Link href={`/agentes/${agent.id}`} className="font-semibold text-gray-900 hover:text-brand-green transition-colors">
+                    {agent.name}
+                  </Link>
                   {agentPhone && (
-                    <a href={`tel:+${waPhone(agentPhone)}`} className="text-sm text-brand-green hover:underline">
+                    <a href={`tel:+${waPhone(agentPhone)}`} className="block text-sm text-brand-green hover:underline">
                       {agentPhone}
                     </a>
                   )}

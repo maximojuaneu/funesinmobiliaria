@@ -70,6 +70,7 @@ export interface TokkoProperty {
   deleted_at?: string
   producer: TokkoAgent
   age?: number
+  orientation?: string
   expenses?: number
   tags?: { id: number; name: string; type: number }[]  // type 1=Servicios, 2=Ambientes, 3=Amenidades
   custom_tags?: { name: string }[]

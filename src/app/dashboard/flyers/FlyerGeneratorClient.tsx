@@ -38,7 +38,6 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: numb
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h)
 }
 
-// Letter-spacing manual — funciona en todos los browsers (ctx.letterSpacing no es universal)
 function fillTextLS(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, spacing: number) {
   let cx = x
   for (const ch of text) {
@@ -47,35 +46,109 @@ function fillTextLS(ctx: CanvasRenderingContext2D, text: string, x: number, y: n
   }
 }
 
+function measureTextLS(ctx: CanvasRenderingContext2D, text: string, spacing: number) {
+  return [...text].reduce((acc, ch) => acc + ctx.measureText(ch).width + spacing, 0)
+}
+
 export default function FlyerGeneratorClient() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [propId,        setPropId]        = useState('')
   const [property,      setProperty]      = useState<any>(null)
   const [photos,        setPhotos]        = useState<string[]>([])
   const [selected,      setSelected]      = useState<string[]>([])
-  const [customAddress, setCustomAddress] = useState('')
   const [loading,       setLoading]       = useState(false)
   const [rendering,     setRendering]     = useState(false)
   const [ready,         setReady]         = useState(false)
+
+  // Campos editables del flyer
+  const [customTipo,    setCustomTipo]    = useState('')
+  const [customSup,     setCustomSup]     = useState('')
+  const [customAddress, setCustomAddress] = useState('')
+  const [customC1,      setCustomC1]      = useState('')
+  const [customC2,      setCustomC2]      = useState('')
+  const [customC3,      setCustomC3]      = useState('')
+  const [customPrice,   setCustomPrice]   = useState('')
+  const [priceBackup,   setPriceBackup]   = useState('')
 
   const fetchProperty = async () => {
     const id = propId.trim()
     if (!id) return
     setLoading(true)
-    setProperty(null); setPhotos([]); setSelected([]); setCustomAddress(''); setReady(false)
+    setProperty(null); setPhotos([]); setSelected([]); setReady(false)
+    setCustomTipo(''); setCustomSup(''); setCustomAddress('')
+    setCustomC1(''); setCustomC2(''); setCustomC3(''); setCustomPrice('')
     try {
       const res  = await fetch(`/api/tokko/property/${id}`)
       const data = await res.json()
       if (data?.id) {
         setProperty(data)
+
+        // Fotos
         const imgs = (data.photos ?? [])
           .filter((p: any) => !p.is_blueprint && !p.is_floor_plan)
           .map((p: any) => p.image as string)
         setPhotos(imgs)
-        const rawAddr   = data.fake_address || data.address || ''
-        const locParts  = (data.location?.full_location ?? '').split(' | ').map((s: string) => s.trim()).filter(Boolean)
+
+        // Tipo y operación
+        const tLbl = TYPE_LABEL[data.type?.name] ?? (data.type?.name ?? '').toUpperCase()
+        const rOp  = (data.operations?.[0]?.operation_type ?? '') as string
+        const oLbl = rOp === 'Sale' || rOp === 'Venta' ? 'VENTA' : rOp === 'Rent' || rOp === 'Alquiler' ? 'ALQUILER' : rOp.toUpperCase()
+        setCustomTipo(`${tLbl} EN ${oLbl}`)
+
+        // Detección de tipo
+        const tName     = (data.type?.name ?? '').toLowerCase()
+        const isTerreno = tName.includes('land')        || tName.includes('terreno')
+        const isDepto   = tName.includes('apartment')   || tName.includes('departamento')
+        const isCampo   = tName.includes('countryside') || tName.includes('campo')
+        const isCom     = tName.includes('bussiness')   || tName.includes('local') || tName.includes('office') || tName.includes('oficina') || tName.includes('warehouse') || tName.includes('depósito') || tName.includes('deposito')
+
+        // Superficie
+        let supStr = ''
+        if (isCampo) {
+          const s = parseFloat(data.surface || data.total_surface || 0)
+          if (s > 0) supStr = `Superficie de ${Math.round(s / 10000)} ha`
+        } else if (isTerreno) {
+          const s = parseFloat(data.surface || data.total_surface || 0)
+          if (s > 0) supStr = `Terreno de ${Math.round(s)} m²`
+        } else if (isDepto) {
+          const s = parseFloat(data.roofed_surface || data.total_surface || 0)
+          if (s > 0) supStr = `Superficie de ${Math.round(s)} m²`
+        } else if (isCom) {
+          const s = parseFloat(data.roofed_surface || data.total_surface || 0)
+          if (s > 0) supStr = `${Math.round(s)} m² cubiertos`
+        } else {
+          const s = parseFloat(data.surface || data.total_surface || 0)
+          if (s > 0) supStr = `Terreno de ${Math.round(s)} m²`
+        }
+        setCustomSup(supStr)
+
+        // Dirección
+        const rawAddr  = data.fake_address || data.address || ''
+        const locParts = (data.location?.full_location ?? '').split(' | ').map((s: string) => s.trim()).filter(Boolean)
         const localidad = locParts.length >= 3 ? locParts[2] : (locParts[locParts.length - 1] ?? '')
         setCustomAddress(localidad ? `${rawAddr} - ${localidad}` : rawAddr)
+
+        // Características
+        const rm     = data.suite_amount       ?? 0
+        const bath   = data.bathroom_amount    ?? 0
+        const garage = data.parking_lot_amount ?? 0
+        const fmt    = (v: any) => parseFloat(v).toFixed(1).replace('.', ',')
+        if (isTerreno) {
+          setCustomC1(data.front_measure ? `${fmt(data.front_measure)} m de frente` : '')
+          setCustomC2(data.depth_measure ? `${fmt(data.depth_measure)} m de fondo`  : '')
+          setCustomC3('')
+        } else if (!isCampo) {
+          setCustomC1(rm === 0 ? 'Monoambiente' : `${rm} dormitorio${rm !== 1 ? 's' : ''}`)
+          setCustomC2(bath   > 0 ? `${bath} baño${bath !== 1 ? 's' : ''}` : '')
+          setCustomC3(garage > 0 ? `${garage} cochera${garage !== 1 ? 's' : ''}` : (rm > 0 ? 'Living' : ''))
+        }
+
+        // Precio
+        const priceObj = data.operations?.[0]?.prices?.[0]
+        if (priceObj?.price) {
+          const curr = priceObj.currency === 'USD' ? 'U$S' : '$'
+          setCustomPrice(`${curr} ${Math.round(priceObj.price).toLocaleString('es-AR')}`)
+        }
       } else {
         alert('No se encontró la propiedad.')
       }
@@ -99,154 +172,106 @@ export default function FlyerGeneratorClient() {
       canvas.width = W; canvas.height = H
       const ctx = canvas.getContext('2d')!
 
-      // Pre-load fonts — esperar a que estén completamente disponibles para canvas
       await document.fonts.ready
       await Promise.allSettled([
-        document.fonts.load('800 67px Montserrat'),
         document.fonts.load('700 67px Montserrat'),
         document.fonts.load('700 59px Montserrat'),
+        document.fonts.load('700 57px Montserrat'),
         document.fonts.load('400 51px Montserrat'),
         document.fonts.load('400 49px Montserrat'),
       ])
 
-      // ── Posiciones exactas extraídas del CDF de Canva (página 14) ──────
-      // Fotos
-      const TOP_H   = 727   // foto principal: y=0 a y=727
-      const BOT_Y   = 1230  // fotos inferiores empiezan en y=1230
-      const BOT_H   = H - BOT_Y          // 690px hasta el borde
-      const BOT_MID = 546   // punto de división entre foto2 y foto3
+      // Layout
+      const TOP_H   = 727
+      const BOT_Y   = 1250
+      const BOT_H   = H - BOT_Y
+      const BOT_MID = 546
 
-      // Textos (y = baseline en canvas, x = margen izquierdo)
-      const TX     = 84    // margen izquierdo de todos los textos
-      const TX2    = 370   // x de caract2 (ej: "2 baños")
-      const TX3    = 580   // x de caract3 (ej: "living")
-      const TY_TIPO   = 850  // "DEPARTAMENTO EN VENTA"  (pos_top=782 + ascender ~68)
-      const TY_SUP    = 975  // "Superficie de 84 m²"    (pos_top=911 + ascender ~59)
-      const TY_UBIC   = 1036 // "Rosario - Zona Centro"  (pos_top=976 + ascender ~51)
-      const TY_CARACT = 1148 // características          (pos_top=1089 + ascender ~49)
+      // Posiciones de texto
+      const TX        = 84
+      const TY_TIPO   = 850
+      const TY_SUP    = 955
+      const TY_UBIC   = 1016
+      const TY_CARACT = 1080
+      const TY_PRICE  = 1185
 
-      // ── Capas PNG estáticas ─────────────────────────────────────────────
+      const LS_T = -2.5  // letter-spacing títulos
+      const LS_C = -1.8  // letter-spacing características
+
       const [seccionImg, logoImg] = await Promise.all([
         loadImg('/' + encodeURIComponent('sección central.png')),
         loadImg('/' + encodeURIComponent('logotipo.png')),
       ])
 
-      // ── Fotos de la propiedad ───────────────────────────────────────────
       const imgs = await Promise.all(selected.map(u => loadImg(u).catch(() => null))) as (HTMLImageElement | null)[]
 
       // 1. Fondo blanco
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, W, H)
 
-      // 2. Foto principal (arriba)
+      // 2. Foto principal
       if (imgs[0]) drawCover(ctx, imgs[0], 0, 0, W, TOP_H)
       else { ctx.fillStyle = '#e0e0e0'; ctx.fillRect(0, 0, W, TOP_H) }
 
       // 3. Fotos inferiores
       const botImgs = imgs.slice(1).filter(Boolean) as HTMLImageElement[]
       if (botImgs.length >= 2) {
-        drawCover(ctx, botImgs[0], 0,       BOT_Y, BOT_MID,       BOT_H)
-        drawCover(ctx, botImgs[1], BOT_MID, BOT_Y, W - BOT_MID,   BOT_H)
+        drawCover(ctx, botImgs[0], 0,       BOT_Y, BOT_MID,     BOT_H)
+        drawCover(ctx, botImgs[1], BOT_MID, BOT_Y, W - BOT_MID, BOT_H)
       } else if (botImgs[0]) {
         drawCover(ctx, botImgs[0], 0, BOT_Y, W, BOT_H)
       }
 
-      // 4. Overlay "sección central" (marco, sombras, panel blanco)
+      // 4. Overlay sección central
       ctx.drawImage(seccionImg, 0, 0, W, H)
 
       // 5. Textos
       ctx.textAlign    = 'left'
       ctx.textBaseline = 'alphabetic'
 
-      const typeName = (property.type?.name ?? '').toLowerCase()
-      const typeLbl  = TYPE_LABEL[property.type?.name] ?? (property.type?.name ?? '').toUpperCase()
-      const rawOp    = (property.operations?.[0]?.operation_type as string) ?? ''
-      const opLbl    =
-        rawOp === 'Sale'    || rawOp === 'Venta'    ? 'VENTA'    :
-        rawOp === 'Rent'    || rawOp === 'Alquiler' ? 'ALQUILER' :
-        rawOp.toUpperCase()
-
-      const isTerreno = typeName.includes('land')       || typeName.includes('terreno')
-      const isDepto   = typeName.includes('apartment')  || typeName.includes('departamento')
-      const isCampo   = typeName.includes('countryside') || typeName.includes('campo')
-      const isComercial = typeName.includes('bussiness') || typeName.includes('local') || typeName.includes('office') || typeName.includes('oficina') || typeName.includes('warehouse') || typeName.includes('depósito') || typeName.includes('deposito')
-
-      const LS_TITULO  = -2.5  // letter-spacing título (px entre chars)
-      const LS_CARACT  = -1.8  // letter-spacing características
-
-      // "DEPARTAMENTO EN VENTA" — bold, verde
-      ctx.fillStyle = '#016333'
-      ctx.font      = '700 67px "Montserrat", Arial'
-      fillTextLS(ctx, `${typeLbl} EN ${opLbl}`, TX, TY_TIPO, LS_TITULO)
-
-      // "Superficie de X m²" — bold, negro
-      let supText = ''
-      if (isCampo) {
-        const s = parseFloat(String(property.surface || property.total_surface || 0))
-        if (s > 0) supText = `Superficie de ${Math.round(s / 10000)} ha`
-      } else if (isTerreno) {
-        const s = parseFloat(String(property.surface || property.total_surface || 0))
-        if (s > 0) supText = `Terreno de ${Math.round(s)} m²`
-      } else if (isDepto) {
-        const s = parseFloat(String(property.roofed_surface || property.total_surface || 0))
-        if (s > 0) supText = `Superficie de ${Math.round(s)} m²`
-      } else if (isComercial) {
-        const s = parseFloat(String(property.roofed_surface || property.total_surface || 0))
-        if (s > 0) supText = `${Math.round(s)} m² cubiertos`
-      } else {
-        const s = parseFloat(String(property.surface || property.total_surface || 0))
-        if (s > 0) supText = `Terreno de ${Math.round(s)} m²`
+      // Línea 1: tipo + operación
+      if (customTipo) {
+        ctx.fillStyle = '#016333'
+        ctx.font      = '700 67px "Montserrat", Arial'
+        fillTextLS(ctx, customTipo, TX, TY_TIPO, LS_T)
       }
-      if (supText) {
+
+      // Línea 2: superficie
+      if (customSup) {
         ctx.fillStyle = '#000000'
         ctx.font      = '700 59px "Montserrat", Arial'
-        fillTextLS(ctx, supText, TX, TY_SUP, LS_TITULO)
+        fillTextLS(ctx, customSup, TX, TY_SUP, LS_T)
       }
 
-      // Ubicación — normal, verde
+      // Línea 3: dirección
       if (customAddress) {
         ctx.fillStyle = '#016333'
         ctx.font      = '400 51px "Montserrat", Arial'
         let addr = customAddress
-        // Truncar si no entra — medir con spacing manual
-        const measureLS = (t: string) => [...t].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_TITULO, 0)
-        while (addr.length > 1 && measureLS(addr) > 880) addr = addr.slice(0, -1)
+        while (addr.length > 1 && measureTextLS(ctx, addr, LS_T) > 880) addr = addr.slice(0, -1)
         if (addr !== customAddress) addr += '…'
-        fillTextLS(ctx, addr, TX, TY_UBIC, LS_TITULO)
+        fillTextLS(ctx, addr, TX, TY_UBIC, LS_T)
       }
 
-      // Características — normal, negro — 3 columnas fijas
-      const rm     = property.suite_amount       ?? 0
-      const bath   = property.bathroom_amount    ?? 0
-      const garage = property.parking_lot_amount ?? 0
-
+      // Línea 4: características (columnas dinámicas)
       ctx.fillStyle = '#000000'
       ctx.font      = '400 49px "Montserrat", Arial'
+      const cols = [customC1, customC2, customC3].filter(Boolean)
+      let cx = TX
+      for (const col of cols) {
+        fillTextLS(ctx, col, cx, TY_CARACT, LS_C)
+        cx += measureTextLS(ctx, col, LS_C) + 30
+      }
 
-      if (isTerreno) {
-        const fmt = (v: any) => parseFloat(v).toFixed(1).replace('.', ',')
-        const t1 = property.front_measure ? `${fmt(property.front_measure)} m de frente` : ''
-        const t2 = property.depth_measure ? `${fmt(property.depth_measure)} m de fondo`  : ''
-        if (t1) {
-          fillTextLS(ctx, t1, TX, TY_CARACT, LS_CARACT)
-          if (t2) {
-            const t1W = [...t1].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_CARACT, 0)
-            fillTextLS(ctx, t2, TX + t1W + 30, TY_CARACT, LS_CARACT)
-          }
-        } else if (t2) {
-          fillTextLS(ctx, t2, TX, TY_CARACT, LS_CARACT)
-        }
-      } else if (!isCampo) {
-        const c1 = rm === 0 ? 'Monoambiente' : `${rm} dormitorio${rm !== 1 ? 's' : ''}`
-        const c2 = bath   > 0 ? `${bath} baño${bath !== 1 ? 's' : ''}`        : ''
-        const c3 = garage > 0 ? `${garage} cochera${garage !== 1 ? 's' : ''}` : (rm > 0 ? 'Living' : '')
-        // Calcular ancho real de c1 para evitar overlap
-        const c1W = [...c1].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_CARACT, 0)
-        const dynTX2 = Math.max(TX2, TX + c1W + 30)
-        const dynTX3 = dynTX2 + (c2 ? [...c2].reduce((acc, ch) => acc + ctx.measureText(ch).width + LS_CARACT, 0) : 0) + 30
-        fillTextLS(ctx, c1, TX,      TY_CARACT, LS_CARACT)
-        if (c2) fillTextLS(ctx, c2, dynTX2, TY_CARACT, LS_CARACT)
-        if (c3) fillTextLS(ctx, c3, dynTX3, TY_CARACT, LS_CARACT)
+      // Línea 5: precio — centrado, mismo estilo que línea 2
+      if (customPrice) {
+        ctx.fillStyle = customPrice === 'RESERVADO' ? '#FF1A1A' : '#000000'
+        ctx.font      = '700 59px "Montserrat", Arial'
+        ctx.textAlign = 'center'
+        ;(ctx as any).letterSpacing = '-2px'
+        ctx.fillText(customPrice, W / 2, TY_PRICE)
+        ;(ctx as any).letterSpacing = '0px'
+        ctx.textAlign = 'left'
       }
 
       // 6. Logo
@@ -258,22 +283,43 @@ export default function FlyerGeneratorClient() {
     } finally {
       setRendering(false)
     }
-  }, [selected, property, customAddress])
+  }, [selected, property, customTipo, customSup, customAddress, customC1, customC2, customC3, customPrice])
 
   useEffect(() => {
     if (selected.length >= 1) drawFlyer()
     else setReady(false)
-  }, [selected, customAddress, drawFlyer])
+  }, [drawFlyer])
 
   const download = () => {
-    const canvas  = canvasRef.current!
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.96)
-    const addr    = property?.fake_address || property?.address || String(property?.id ?? 'prop')
-    const city    = property?.location?.name ?? ''
-    const name    = `Flyer-${city ? `${addr} - ${city}` : addr}`.replace(/[<>:"/\\|?*]/g, '').trim()
-    const link    = document.createElement('a')
-    link.href = dataUrl; link.download = `${name}.jpg`; link.click()
+    const canvas = canvasRef.current!
+    const addr   = property?.fake_address || property?.address || String(property?.id ?? 'prop')
+    const city   = property?.location?.name ?? ''
+    const name   = `Flyer-${city ? `${addr} - ${city}` : addr}`.replace(/[<>:"/\\|?*]/g, '').trim()
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      const file = new File([blob], `${name}.jpg`, { type: 'image/jpeg' })
+
+      // En mobile usamos Web Share API (iOS/Android) si está disponible
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: name })
+          return
+        } catch (e) {
+          if ((e as Error).name === 'AbortError') return // usuario canceló
+        }
+      }
+
+      // Fallback desktop: blob URL (más confiable que data URI)
+      const url  = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url; link.download = `${name}.jpg`; link.click()
+      URL.revokeObjectURL(url)
+    }, 'image/jpeg', 0.96)
   }
+
+  const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition-colors'
+  const labelClass = 'block text-xs text-gray-500 mb-1'
 
   return (
     <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -335,15 +381,65 @@ export default function FlyerGeneratorClient() {
           </div>
         )}
 
-        {/* Step 3 */}
+        {/* Step 3 — Editar texto */}
         {property && (
-          <div className={`bg-white rounded-2xl p-6 shadow-sm border transition-colors ${customAddress ? 'border-brand-green' : 'border-gray-100'}`}>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-green">
             <h2 className="font-bold mb-1 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-brand-green text-white text-xs flex items-center justify-center font-bold">3</span>
-              Dirección / Ubicación
+              Editar texto del flyer
             </h2>
-            <p className="text-xs text-gray-500 mb-4 ml-8">Podés editarla libremente antes de generar.</p>
-            <input className="input-field w-full" value={customAddress} onChange={e => setCustomAddress(e.target.value)} placeholder="Ej: San Luis 300 - Rosario - Zona Centro - Piso 4" />
+            <p className="text-xs text-gray-500 mb-5 ml-8">Todos los campos se pueden editar antes de descargar.</p>
+
+            <div className="space-y-4">
+              {/* Línea 1 */}
+              <div>
+                <label className={labelClass}>Línea 1 — Tipo y operación</label>
+                <input className={inputClass} value={customTipo} onChange={e => setCustomTipo(e.target.value.toUpperCase())} placeholder="Ej: DEPARTAMENTO EN VENTA" />
+              </div>
+
+              {/* Línea 2 */}
+              <div>
+                <label className={labelClass}>Línea 2 — Superficie</label>
+                <input className={inputClass} value={customSup} onChange={e => setCustomSup(e.target.value)} placeholder="Ej: Superficie de 84 m²" />
+              </div>
+
+              {/* Línea 3 */}
+              <div>
+                <label className={labelClass}>Línea 3 — Dirección / Ubicación</label>
+                <input className={inputClass} value={customAddress} onChange={e => setCustomAddress(e.target.value)} placeholder="Ej: San Luis 300 - Rosario - Zona Centro - Piso 4" />
+              </div>
+
+              {/* Características */}
+              <div>
+                <label className={labelClass}>Características (3 columnas)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <input className={inputClass} value={customC1} onChange={e => setCustomC1(e.target.value)} placeholder="3 dormitorios" />
+                  <input className={inputClass} value={customC2} onChange={e => setCustomC2(e.target.value)} placeholder="2 baños" />
+                  <input className={inputClass} value={customC3} onChange={e => setCustomC3(e.target.value)} placeholder="Living" />
+                </div>
+              </div>
+
+              {/* Precio */}
+              <div>
+                <label className={labelClass}>Precio</label>
+                <div className="flex gap-2">
+                  <input className={inputClass} value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder="Ej: U$S 120.000" />
+                  <button
+                    onClick={() => {
+                      if (customPrice === 'RESERVADO') {
+                        setCustomPrice(priceBackup)
+                      } else {
+                        setPriceBackup(customPrice)
+                        setCustomPrice('RESERVADO')
+                      }
+                    }}
+                    className={`shrink-0 px-3 py-2 rounded-xl text-sm font-bold text-white transition-colors ${customPrice === 'RESERVADO' ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    RESERVADO
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
