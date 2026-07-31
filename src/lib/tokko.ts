@@ -135,20 +135,36 @@ const TYPE_NAME_ES_TO_EN: Record<string, string> = {
   'Deposito':        'Warehouse',
 }
 
-export async function getPropertyById(id: number | string): Promise<TokkoProperty> {
-  const p = await tokkoFetch<TokkoProperty>(`/property/${id}/`, { lang: 'es_ar' })
-  // Normalize operation_type: lang=es_ar returns "Venta"/"Alquiler" instead of "Sale"/"Rent"
+function normalizeProperty(p: TokkoProperty): TokkoProperty {
   p.operations = p.operations?.map(op => ({
     ...op,
     operation_type: (op.operation_type as string) === 'Venta' ? 'Sale' as const
       : (op.operation_type as string) === 'Alquiler' ? 'Rent' as const
       : op.operation_type,
   }))
-  // Normalize type.name: lang=es_ar returns Spanish names instead of English keys
   if (p.type?.name && TYPE_NAME_ES_TO_EN[p.type.name]) {
     p.type = { ...p.type, name: TYPE_NAME_ES_TO_EN[p.type.name] }
   }
   return p
+}
+
+export async function getPropertyById(id: number | string): Promise<TokkoProperty> {
+  // 1. Try direct lookup (available properties)
+  const direct = await tokkoFetch<any>(`/property/${id}/`, { lang: 'es_ar' }).catch(() => null)
+  if (direct?.id) return normalizeProperty(direct as TokkoProperty)
+
+  // 2. Try direct lookup with status=2 (reserved) — works on some Tokko versions
+  const directReserved = await tokkoFetch<any>(`/property/${id}/`, { lang: 'es_ar', status: 2 }).catch(() => null)
+  if (directReserved?.id) return normalizeProperty(directReserved as TokkoProperty)
+
+  // 3. Last resort: search in the reserved properties list
+  const reservedList = await tokkoFetch<TokkoListResponse<TokkoProperty>>('/property/', {
+    limit: 500, status: 2,
+  }).catch(() => ({ objects: [] as TokkoProperty[] }))
+  const found = reservedList.objects?.find(p => String(p.id) === String(id))
+  if (found) return normalizeProperty(found)
+
+  throw new Error(`Property ${id} not found`)
 }
 
 export async function getFeaturedProperties(): Promise<TokkoProperty[]> {

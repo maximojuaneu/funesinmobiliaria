@@ -56,7 +56,7 @@ export default async function AgentePage({ params, searchParams }: Props) {
       {/* Agent header */}
       <div className="flex items-center gap-5 mb-10">
         {hasCustomAvatar(agent.picture)
-          ? <Image src={agent.picture} alt={agent.name} width={80} height={80} className="rounded-full object-cover flex-shrink-0 shadow" style={{ width: 80, height: 80 }} />
+          ? <Image src={agent.picture!} alt={agent.name} width={80} height={80} className="rounded-full object-cover flex-shrink-0 shadow" style={{ width: 80, height: 80 }} />
           : <div className="w-20 h-20 rounded-full bg-brand-light flex items-center justify-center text-brand-green font-bold text-2xl flex-shrink-0 shadow">
               {initials}
             </div>

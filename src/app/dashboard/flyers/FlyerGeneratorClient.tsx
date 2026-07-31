@@ -70,11 +70,31 @@ export default function FlyerGeneratorClient() {
   const [customPrice,   setCustomPrice]   = useState('')
   const [priceBackup,   setPriceBackup]   = useState('')
 
+  // Modo manual (para propiedades reservadas que Tokko bloquea en la API)
+  const [manualMode,    setManualMode]    = useState(false)
+  const [notFound,      setNotFound]      = useState(false)
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 20)
+    const urls  = files.map(f => URL.createObjectURL(f))
+    setUploadedPhotos(prev => [...prev, ...urls].slice(0, 20))
+    e.target.value = ''
+  }
+
+  const activateManualMode = () => {
+    setManualMode(true); setNotFound(false)
+    setSelected([]); setReady(false)
+  }
+
   const fetchProperty = async () => {
-    const id = propId.trim()
+    // Strip any letter prefix (e.g. "FHO8105665" → "8105665")
+    const id = propId.trim().replace(/^[a-zA-Z]+/, '')
     if (!id) return
     setLoading(true)
     setProperty(null); setPhotos([]); setSelected([]); setReady(false)
+    setManualMode(false); setNotFound(false); setUploadedPhotos([])
     setCustomTipo(''); setCustomSup(''); setCustomAddress('')
     setCustomC1(''); setCustomC2(''); setCustomC3(''); setCustomPrice('')
     try {
@@ -150,9 +170,9 @@ export default function FlyerGeneratorClient() {
           setCustomPrice(`${curr} ${Math.round(priceObj.price).toLocaleString('es-AR')}`)
         }
       } else {
-        alert('No se encontró la propiedad.')
+        setNotFound(true)
       }
-    } catch { alert('Error al buscar la propiedad.') }
+    } catch { setNotFound(true) }
     finally   { setLoading(false) }
   }
 
@@ -164,7 +184,7 @@ export default function FlyerGeneratorClient() {
     )
 
   const drawFlyer = useCallback(async () => {
-    if (selected.length < 1 || !property || !canvasRef.current) return
+    if (selected.length < 1 || (!property && !manualMode) || !canvasRef.current) return
     setRendering(true); setReady(false)
     try {
       const canvas = canvasRef.current
@@ -283,7 +303,7 @@ export default function FlyerGeneratorClient() {
     } finally {
       setRendering(false)
     }
-  }, [selected, property, customTipo, customSup, customAddress, customC1, customC2, customC3, customPrice])
+  }, [selected, property, manualMode, customTipo, customSup, customAddress, customC1, customC2, customC3, customPrice])
 
   useEffect(() => {
     if (selected.length >= 1) drawFlyer()
@@ -292,7 +312,7 @@ export default function FlyerGeneratorClient() {
 
   const download = () => {
     const canvas = canvasRef.current!
-    const addr   = property?.fake_address || property?.address || String(property?.id ?? 'prop')
+    const addr   = property?.fake_address || property?.address || customAddress || customTipo || 'manual'
     const city   = property?.location?.name ?? ''
     const name   = `Flyer-${city ? `${addr} - ${city}` : addr}`.replace(/[<>:"/\\|?*]/g, '').trim()
 
@@ -351,10 +371,25 @@ export default function FlyerGeneratorClient() {
               {property.publication_title || property.fake_address || property.address}
             </p>
           )}
+          {notFound && (
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <p className="font-medium">Propiedad no encontrada.</p>
+              <p className="text-xs mt-0.5 text-amber-700">Tokko no expone por API las propiedades <strong>reservadas</strong> ni las <strong>no disponibles</strong>. Podés cargar las fotos y datos manualmente.</p>
+              <button onClick={activateManualMode} className="mt-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors">
+                Cargar manualmente
+              </button>
+            </div>
+          )}
+          {manualMode && (
+            <p className="text-sm text-amber-600 mt-2 font-medium flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+              Modo manual — completá los campos y subí las fotos
+            </p>
+          )}
         </div>
 
         {/* Step 2 */}
-        {property && photos.length > 0 && (
+        {((property && photos.length > 0) || manualMode) && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-green">
             <h2 className="font-bold mb-1 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-brand-green text-white text-xs flex items-center justify-center font-bold">2</span>
@@ -364,8 +399,21 @@ export default function FlyerGeneratorClient() {
               Hasta <strong>3 fotos</strong> en orden. Foto 1 = principal · Fotos 2–3 = abajo.
               {selected.length > 0 && <span className="text-brand-green font-semibold"> {selected.length}/3 seleccionadas</span>}
             </p>
+
+            {/* Subida manual de fotos */}
+            {manualMode && (
+              <div className="mb-4">
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+                <button onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-gray-500 hover:border-brand-green hover:text-brand-green transition-colors flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  Subir fotos desde el dispositivo
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2">
-              {photos.map(url => {
+              {(manualMode ? uploadedPhotos : photos).map(url => {
                 const idx = selected.indexOf(url); const sel = idx !== -1; const atMax = selected.length >= 3 && !sel
                 return (
                   <button key={url} onClick={() => togglePhoto(url)} disabled={atMax}
@@ -382,7 +430,7 @@ export default function FlyerGeneratorClient() {
         )}
 
         {/* Step 3 — Editar texto */}
-        {property && (
+        {(property || manualMode) && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-green">
             <h2 className="font-bold mb-1 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-brand-green text-white text-xs flex items-center justify-center font-bold">3</span>
@@ -450,8 +498,8 @@ export default function FlyerGeneratorClient() {
           {selected.length < 1 && !rendering ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-3 p-8 text-center">
               <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              <p className="text-sm font-medium">{!property ? 'Buscá una propiedad para comenzar' : 'Seleccioná al menos 1 foto'}</p>
-              {property && <p className="text-xs">El flyer se genera automáticamente</p>}
+              <p className="text-sm font-medium">{(!property && !manualMode) ? 'Buscá una propiedad para comenzar' : 'Seleccioná al menos 1 foto'}</p>
+              {(property || manualMode) && <p className="text-xs">El flyer se genera automáticamente</p>}
             </div>
           ) : rendering ? (
             <div className="w-full h-full flex items-center justify-center">
