@@ -69,6 +69,8 @@ export default function FlyerGeneratorClient() {
   const [customC3,      setCustomC3]      = useState('')
   const [customPrice,   setCustomPrice]   = useState('')
   const [priceBackup,   setPriceBackup]   = useState('')
+  const [isReservado,   setIsReservado]   = useState(false)
+  const [isRetasado,    setIsRetasado]    = useState(false)
 
   // Modo manual (para propiedades reservadas que Tokko bloquea en la API)
   const [manualMode,    setManualMode]    = useState(false)
@@ -96,7 +98,7 @@ export default function FlyerGeneratorClient() {
     setProperty(null); setPhotos([]); setSelected([]); setReady(false)
     setManualMode(false); setNotFound(false); setUploadedPhotos([])
     setCustomTipo(''); setCustomSup(''); setCustomAddress('')
-    setCustomC1(''); setCustomC2(''); setCustomC3(''); setCustomPrice('')
+    setCustomC1(''); setCustomC2(''); setCustomC3(''); setCustomPrice(''); setIsReservado(false); setIsRetasado(false)
     try {
       const res  = await fetch(`/api/tokko/property/${id}`)
       const data = await res.json()
@@ -283,16 +285,26 @@ export default function FlyerGeneratorClient() {
         cx += measureTextLS(ctx, col, LS_C) + 30
       }
 
-      // Línea 5: precio — centrado, mismo estilo que línea 2
-      if (customPrice) {
-        ctx.fillStyle = customPrice === 'RESERVADO' ? '#FF1A1A' : '#000000'
-        ctx.font      = '700 59px "Montserrat", Arial'
-        ctx.textAlign = 'center'
-        ;(ctx as any).letterSpacing = '-2px'
+      // Línea 5: precio / RESERVADO / RETASADO — centrado
+      ;(ctx as any).letterSpacing = '-2px'
+      ctx.textAlign = 'center'
+      ctx.font = '700 59px "Montserrat", Arial'
+
+      if (isRetasado) {
+        // "RETASADO" en rojo arriba, precio en negro abajo — centrados alrededor de TY_PRICE
+        ctx.fillStyle = '#FF1A1A'
+        ctx.fillText('RETASADO', W / 2, TY_PRICE - 30)
+        if (customPrice) {
+          ctx.fillStyle = '#000000'
+          ctx.fillText(customPrice, W / 2, TY_PRICE + 35)
+        }
+      } else if (customPrice) {
+        ctx.fillStyle = isReservado ? '#FF1A1A' : '#000000'
         ctx.fillText(customPrice, W / 2, TY_PRICE)
-        ;(ctx as any).letterSpacing = '0px'
-        ctx.textAlign = 'left'
       }
+
+      ;(ctx as any).letterSpacing = '0px'
+      ctx.textAlign = 'left'
 
       // 6. Logo
       ctx.drawImage(logoImg, 0, 0, W, H)
@@ -303,7 +315,7 @@ export default function FlyerGeneratorClient() {
     } finally {
       setRendering(false)
     }
-  }, [selected, property, manualMode, customTipo, customSup, customAddress, customC1, customC2, customC3, customPrice])
+  }, [selected, property, manualMode, isReservado, isRetasado, customTipo, customSup, customAddress, customC1, customC2, customC3, customPrice])
 
   useEffect(() => {
     if (selected.length >= 1) drawFlyer()
@@ -471,19 +483,37 @@ export default function FlyerGeneratorClient() {
               <div>
                 <label className={labelClass}>Precio</label>
                 <div className="flex gap-2">
-                  <input className={inputClass} value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder="Ej: U$S 120.000" />
+                  <input
+                    className={`${inputClass} ${(isReservado || isRetasado) ? 'text-red-600 font-bold' : ''}`}
+                    value={customPrice}
+                    onChange={e => setCustomPrice(e.target.value)}
+                    placeholder="Ej: U$S 120.000"
+                  />
                   <button
                     onClick={() => {
-                      if (customPrice === 'RESERVADO') {
-                        setCustomPrice(priceBackup)
+                      if (isReservado) {
+                        setIsReservado(false); setCustomPrice(priceBackup)
                       } else {
-                        setPriceBackup(customPrice)
-                        setCustomPrice('RESERVADO')
+                        if (isRetasado) setIsRetasado(false)
+                        setPriceBackup(customPrice); setIsReservado(true); setCustomPrice('RESERVADO')
                       }
                     }}
-                    className={`shrink-0 px-3 py-2 rounded-xl text-sm font-bold text-white transition-colors ${customPrice === 'RESERVADO' ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'}`}
+                    className={`shrink-0 px-3 py-2 rounded-xl text-sm font-bold text-white transition-colors ${isReservado ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'}`}
                   >
                     RESERVADO
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (isRetasado) {
+                        setIsRetasado(false)
+                      } else {
+                        if (isReservado) { setIsReservado(false); setCustomPrice(priceBackup) }
+                        setIsRetasado(true)
+                      }
+                    }}
+                    className={`shrink-0 px-3 py-2 rounded-xl text-sm font-bold text-white transition-colors ${isRetasado ? 'bg-gray-400 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    RETASADO
                   </button>
                 </div>
               </div>
