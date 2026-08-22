@@ -362,6 +362,12 @@ export function TasacionDocument({ data, logoUrl, logoBlancoUrl }: { data: Tasac
           </View>
         ))}
 
+        <View style={{ backgroundColor: '#e6f4ee', borderRadius: 4, padding: 10, marginTop: 14, borderLeftWidth: 3, borderLeftColor: GREEN }}>
+          <Text style={{ fontSize: 8.5, color: GREEN, fontFamily: MONT, fontWeight: 700, textAlign: 'center', lineHeight: 1.5 }}>
+            Este informe fue realizado por los corredores inmobiliarios Fabio H. Juaneu Mat 0298 COCIR y Maximo F. Juaneu Mat 2708 COCIR.
+          </Text>
+        </View>
+
         <View style={s.mktFooter}>
           <Image src={logoUrl} style={{ width: 90, height: 36, objectFit: 'contain', marginBottom: 5 }} />
           <Text style={s.mktFooterTxt}>{data.agenteNombre ? `${data.agenteNombre} — Funes Inmobiliaria` : 'Funes Inmobiliaria'}</Text>
