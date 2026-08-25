@@ -1,6 +1,7 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
 
 const PROPERTY_TYPES: { label: string; value: string }[] = [
   { label: 'Casa',             value: 'House' },
@@ -175,12 +176,12 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
       {/* Barrio */}
       <div className="space-y-1">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dirección / Barrio / Ciudad</label>
-        <input
+        <LocationAutocomplete
           className="input-field"
           placeholder="Ej: Funes, Roldán, Rosario"
           value={location}
-          onChange={e => setLocation(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') applyFilters() }}
+          onChange={setLocation}
+          onEnter={applyFilters}
         />
       </div>
 
@@ -261,12 +262,12 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
         {/* Dirección / Barrio / Ciudad — Enter aplica filtros */}
         <div className="space-y-1">
           <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dirección / Barrio / Ciudad</label>
-          <input
+          <LocationAutocomplete
             className="input-field"
             placeholder="Ej: Funes, Roldán, Rosario"
             value={location}
-            onChange={e => setLocation(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') applyFilters() }}
+            onChange={setLocation}
+            onEnter={applyFilters}
           />
         </div>
 

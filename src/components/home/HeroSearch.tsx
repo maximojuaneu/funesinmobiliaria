@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { gtagEvent } from '@/lib/gtag'
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
 
 // Values must match what Tokko / venta|alquiler pages expect via `type` param
 const PROPERTY_TYPES = [
@@ -62,12 +63,12 @@ export default function HeroSearch() {
           ))}
         </select>
 
-        <input
+        <LocationAutocomplete
           className="input-field"
           placeholder="Dirección o barrio"
           value={location}
-          onChange={e => setLocation(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleBuscar()}
+          onChange={setLocation}
+          onEnter={handleBuscar}
         />
 
         <button

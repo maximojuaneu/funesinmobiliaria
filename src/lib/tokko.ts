@@ -246,6 +246,46 @@ export async function getAllActiveProperties(): Promise<TokkoProperty[]> {
   return fetchAllProperties(200)
 }
 
+export interface LocationSuggestion {
+  name:        string
+  type:        'ciudad' | 'barrio'
+  city?:       string
+  provincia:   string
+  searchValue: string
+}
+
+export async function getLocations(): Promise<LocationSuggestion[]> {
+  const all = await fetchAllProperties(200)
+  const cities   = new Map<string, LocationSuggestion>()
+  const barrios  = new Map<string, LocationSuggestion>()
+
+  for (const p of all) {
+    const fl = p.location?.full_location
+    if (!fl) continue
+    const parts = fl.split(' | ').map(s => s.trim()).filter(Boolean)
+    // Format: Argentina | Provincia | Ciudad [| Barrio [| Sub]]
+    if (parts.length < 3) continue
+    const provincia = parts[1]
+    const ciudad    = parts[2]
+
+    if (!cities.has(ciudad)) {
+      cities.set(ciudad, { name: ciudad, type: 'ciudad', provincia, searchValue: ciudad })
+    }
+    if (parts.length >= 4) {
+      const barrio = parts[parts.length - 1]
+      const key    = `${ciudad}|${barrio}`
+      if (!barrios.has(key)) {
+        barrios.set(key, { name: barrio, type: 'barrio', city: ciudad, provincia, searchValue: barrio })
+      }
+    }
+  }
+
+  return [
+    ...Array.from(cities.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    ...Array.from(barrios.values()).sort((a, b) => a.name.localeCompare(b.name)),
+  ]
+}
+
 export async function getAgents(): Promise<TokkoAgent[]> {
   const all = await fetchAllProperties(200)
   const seen = new Map<number, TokkoAgent>()
