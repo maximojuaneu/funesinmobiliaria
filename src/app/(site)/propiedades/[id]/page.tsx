@@ -92,9 +92,14 @@ export default async function PropertyPage({ params }: Props) {
     )
   }
 
-  const opType  = property.operations?.[0]?.operation_type as 'Sale' | 'Rent' | undefined
-  const price   = getOperationPrice(property, opType)
+  const opType  = property.operations?.[0]?.operation_type as 'Sale' | 'Rent' | 'Temporary Rent' | undefined
   const photos  = property.photos?.filter((p: any) => !p.is_blueprint) ?? []
+
+  // Collect all operations with prices
+  const allOperations = (property.operations ?? []).map((op: any) => {
+    const opPrice = getOperationPrice(property, op.operation_type)
+    return opPrice ? { type: op.operation_type as 'Sale' | 'Rent' | 'Temporary Rent', ...opPrice } : null
+  }).filter(Boolean) as { type: 'Sale' | 'Rent' | 'Temporary Rent'; amount: number; currency: string }[]
 
   // Surfaces (rounded, only show if > 0)
   const toHa = (v: any) => { const n = parseFloat(v); return n > 0 ? Math.round(n / 10000).toString() : null }
@@ -133,10 +138,14 @@ export default async function PropertyPage({ params }: Props) {
 
           {/* Title */}
           <div>
-            {opType && (
-              <span className={`inline-block mb-3 ${opType === 'Sale' ? 'tag-venta' : 'tag-alquiler'}`}>
-                {opType === 'Sale' ? 'VENTA' : 'ALQUILER'}
-              </span>
+            {allOperations.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {allOperations.map((op) => (
+                  <span key={op.type} className={op.type === 'Sale' ? 'tag-venta' : 'tag-alquiler'}>
+                    {op.type === 'Sale' ? 'VENTA' : op.type === 'Temporary Rent' ? 'ALQUILER TEMP.' : 'ALQUILER'}
+                  </span>
+                ))}
+              </div>
             )}
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {property.publication_title || property.address}
@@ -187,12 +196,27 @@ export default async function PropertyPage({ params }: Props) {
 
           {/* Price + contact buttons */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            {price && (
-              <p className="text-3xl font-extrabold text-gray-900 mb-1">
-                {price.currency === 'USD' ? 'USD' : '$'} {price.amount.toLocaleString('es-AR')}
-              </p>
+            {allOperations.length > 0 && (
+              <div className={`mb-1 ${allOperations.length > 1 ? 'space-y-3' : ''}`}>
+                {allOperations.map((op) => {
+                  const label = op.type === 'Sale' ? 'Venta' : op.type === 'Temporary Rent' ? 'Alquiler temporario' : 'Alquiler'
+                  return (
+                    <div key={op.type}>
+                      {allOperations.length > 1 && (
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{label}</p>
+                      )}
+                      <p className="text-3xl font-extrabold text-gray-900">
+                        {op.currency === 'USD' ? 'USD' : '$'} {op.amount.toLocaleString('es-AR')}
+                      </p>
+                      {allOperations.length === 1 && (
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-0.5">{label}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             )}
-            <p className="text-sm text-gray-500 mb-5">{property.location?.full_location || property.address}</p>
+            <p className="text-sm text-gray-500 mb-5 mt-2">{property.location?.full_location || property.address}</p>
 
             {/* WhatsApp → agent number */}
             <ContactTracker

@@ -1,23 +1,29 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const links = [
-  { label: 'VENTA',            href: '/venta' },
-  { label: 'ALQUILER',         href: '/alquiler' },
   { label: 'EMPRENDIMIENTOS',  href: '/emprendimientos' },
   { label: 'NOSOTROS',         href: '/nosotros' },
+]
+
+const alquilerDropdown = [
+  { label: 'PERMANENTE',  href: '/alquiler' },
+  { label: 'TEMPORARIO',  href: '/alquiler?temp=1' },
 ]
 
 // Scroll distance (px) over which the navbar fades from transparent to white
 const FADE_RANGE = 120
 
 export default function Navbar() {
-  const [scrollY, setScrollY]   = useState(0)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [scrollY, setScrollY]             = useState(0)
+  const [menuOpen, setMenuOpen]           = useState(false)
+  const [alquilerOpen, setAlquilerOpen]   = useState(false)
+  const [mobileAlqOpen, setMobileAlqOpen] = useState(false)
+  const [isMobile, setIsMobile]           = useState(false)
+  const alquilerRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   const isHome = pathname === '/'
@@ -36,6 +42,16 @@ export default function Navbar() {
     const handler = () => setScrollY(window.scrollY)
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (alquilerRef.current && !alquilerRef.current.contains(e.target as Node)) {
+        setAlquilerOpen(false)
+      }
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
   }, [])
 
   // En mobile siempre blanco. En desktop, fade transparente→blanco al scrollear en home.
@@ -73,6 +89,52 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold font-eurostile">
+          {/* VENTA */}
+          <Link
+            href="/venta"
+            className={`tracking-wide transition-colors hover:text-brand-green ${
+              !isTransparent && pathname.startsWith('/venta') ? 'text-brand-green' : ''
+            }`}
+            style={{ color: isTransparent ? linkColor : undefined }}
+          >
+            VENTA
+          </Link>
+
+          {/* ALQUILER dropdown */}
+          <div ref={alquilerRef} className="relative">
+            <button
+              onClick={() => setAlquilerOpen(o => !o)}
+              className={`tracking-wide transition-colors hover:text-brand-green flex items-center gap-1 ${
+                !isTransparent && pathname.startsWith('/alquiler') ? 'text-brand-green' : ''
+              }`}
+              style={{ color: isTransparent ? linkColor : undefined }}
+            >
+              ALQUILER
+              <svg
+                width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                className={`transition-transform duration-200 ${alquilerOpen ? 'rotate-180' : ''}`}
+              >
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            {alquilerOpen && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden min-w-[160px] z-50">
+                {alquilerDropdown.map(item => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setAlquilerOpen(false)}
+                    className="block px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-brand-green tracking-wide transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Resto de links */}
           {links.map(l => (
             <Link
               key={l.href}
@@ -112,7 +174,7 @@ export default function Navbar() {
         {/* Mobile hamburger */}
         <button
           className="lg:hidden flex flex-col gap-1.5 p-1"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => { setMenuOpen(o => !o); setMobileAlqOpen(false) }}
           aria-label="Menú"
         >
           {[
@@ -132,6 +194,32 @@ export default function Navbar() {
       {/* Mobile menu — always white bg */}
       {menuOpen && (
         <div className="lg:hidden border-t border-gray-200 bg-white px-6 py-4 flex flex-col gap-4 text-sm font-semibold">
+          <Link href="/venta" onClick={() => setMenuOpen(false)} className={`tracking-wide hover:text-brand-green ${pathname.startsWith('/venta') ? 'text-brand-green' : 'text-gray-700'}`}>VENTA</Link>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setMobileAlqOpen(o => !o)}
+              className={`tracking-wide flex items-center gap-1 text-left ${pathname.startsWith('/alquiler') ? 'text-brand-green' : 'text-gray-700'}`}
+            >
+              ALQUILER
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${mobileAlqOpen ? 'rotate-180' : ''}`}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            {mobileAlqOpen && (
+              <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-100">
+                {alquilerDropdown.map(item => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => { setMenuOpen(false); setMobileAlqOpen(false) }}
+                    className="tracking-wide text-gray-600 hover:text-brand-green"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
           {links.map(l => (
             <Link
               key={l.href}
