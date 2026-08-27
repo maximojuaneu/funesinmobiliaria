@@ -17,15 +17,15 @@ const PROPERTY_TYPES = [
 
 export default function HeroSearch() {
   const router = useRouter()
-  const [operacion, setOperacion] = useState<'venta' | 'alquiler'>('venta')
-  const [type, setType] = useState('')
-  const [location, setLocation] = useState('')
+  const [operacion,  setOperacion] = useState<'venta' | 'alquiler'>('venta')
+  const [type,       setType]      = useState('')
+  const [locations,  setLocations] = useState<string[]>([])
 
   function handleBuscar() {
     const params = new URLSearchParams()
-    if (type)     params.set('type', type)
-    if (location) params.set('location', location)
-    gtagEvent('search', { operacion, type, location })
+    if (type)              params.set('type', type)
+    if (locations.length)  params.set('location', locations.join(','))
+    gtagEvent('search', { operacion, type, location: locations.join(',') })
     const query = params.toString()
     router.push(`/${operacion}${query ? `?${query}` : ''}`)
   }
@@ -65,9 +65,10 @@ export default function HeroSearch() {
 
         <LocationAutocomplete
           className="input-field"
-          placeholder="Dirección o barrio"
-          value={location}
-          onChange={setLocation}
+          placeholder="Ciudad o barrio"
+          values={locations}
+          onChangeMulti={setLocations}
+          maxValues={3}
           onEnter={handleBuscar}
         />
 

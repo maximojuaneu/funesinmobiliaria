@@ -40,18 +40,21 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
   const parseSuites = (raw: string | null) =>
     raw ? raw.split(',').filter(Boolean) : []
 
-  const [operation, setOperation] = useState(operationType)
-  const [type,      setType]      = useState(searchParams.get('type')      ?? '')
-  const [suites,    setSuites]    = useState<string[]>(parseSuites(searchParams.get('suites')))
-  const [location,  setLocation]  = useState(searchParams.get('location')  ?? '')
-  const [priceFrom, setPriceFrom] = useState(searchParams.get('priceFrom') ?? '')
-  const [priceTo,   setPriceTo]   = useState(searchParams.get('priceTo')   ?? '')
+  const parseLocations = (raw: string | null) =>
+    raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : []
+
+  const [operation,  setOperation]  = useState(operationType)
+  const [type,       setType]       = useState(searchParams.get('type')      ?? '')
+  const [suites,     setSuites]     = useState<string[]>(parseSuites(searchParams.get('suites')))
+  const [locations,  setLocations]  = useState<string[]>(parseLocations(searchParams.get('location')))
+  const [priceFrom,  setPriceFrom]  = useState(searchParams.get('priceFrom') ?? '')
+  const [priceTo,    setPriceTo]    = useState(searchParams.get('priceTo')   ?? '')
 
   useEffect(() => {
     setOperation(operationType)
     setType(searchParams.get('type')           ?? '')
     setSuites(parseSuites(searchParams.get('suites')))
-    setLocation(searchParams.get('location')   ?? '')
+    setLocations(parseLocations(searchParams.get('location')))
     setPriceFrom(searchParams.get('priceFrom') ?? '')
     setPriceTo(searchParams.get('priceTo')     ?? '')
   }, [searchParams, operationType])
@@ -64,8 +67,8 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
   const buildParams = (op: string) => {
     const values: Record<string, string> = {
       type,
-      suites: suites.join(','),
-      location,
+      suites:   suites.join(','),
+      location: locations.join(','),
       priceFrom,
       priceTo,
     }
@@ -88,7 +91,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
   }
 
   const clearAll = () => {
-    setType(''); setSuites([]); setLocation(''); setPriceFrom(''); setPriceTo('')
+    setType(''); setSuites([]); setLocations([]); setPriceFrom(''); setPriceTo('')
     router.push(basePath(operation))
   }
 
@@ -179,8 +182,9 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
         <LocationAutocomplete
           className="input-field"
           placeholder="Ej: Funes, Roldán, Rosario"
-          value={location}
-          onChange={setLocation}
+          values={locations}
+          onChangeMulti={setLocations}
+          maxValues={3}
           onEnter={applyFilters}
         />
       </div>
@@ -265,8 +269,9 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
           <LocationAutocomplete
             className="input-field"
             placeholder="Ej: Funes, Roldán, Rosario"
-            value={location}
-            onChange={setLocation}
+            values={locations}
+            onChangeMulti={setLocations}
+            maxValues={3}
             onEnter={applyFilters}
           />
         </div>

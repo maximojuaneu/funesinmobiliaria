@@ -64,13 +64,15 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{ ob
     filtered = filtered.filter(p => normalize(p.type?.name ?? '').includes(t))
   }
 
-  // Filter by location/barrio (accent-insensitive)
+  // Filter by location/barrio (accent-insensitive, supports comma-separated OR)
   if (filters.location) {
-    const loc = normalize(filters.location)
+    const locs = filters.location.split(',').map(l => normalize(l.trim())).filter(Boolean)
     filtered = filtered.filter(p =>
-      normalize(p.address ?? '').includes(loc) ||
-      normalize(p.location?.name ?? '').includes(loc) ||
-      normalize(p.location?.full_location ?? '').includes(loc)
+      locs.some(loc =>
+        normalize(p.address ?? '').includes(loc) ||
+        normalize(p.location?.name ?? '').includes(loc) ||
+        normalize(p.location?.full_location ?? '').includes(loc)
+      )
     )
   }
 
