@@ -64,11 +64,12 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
       prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]
     )
 
-  const buildParams = (op: string) => {
+  const buildParams = (op: string, overrideLocations?: string[]) => {
+    const locs = overrideLocations ?? locations
     const values: Record<string, string> = {
       type,
       suites:   suites.join(','),
-      location: locations.join(','),
+      location: locs.join(','),
       priceFrom,
       priceTo,
     }
@@ -84,8 +85,8 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
 
   const basePath = (op: string) => op === 'Sale' ? '/venta' : '/alquiler'
 
-  const applyFilters = () => {
-    const qs = buildParams(operation)
+  const applyFilters = (newLocations?: string[]) => {
+    const qs = buildParams(operation, newLocations)
     router.push(`${basePath(operation)}${qs ? `?${qs}` : ''}`, { scroll: false })
     onClose?.()
   }

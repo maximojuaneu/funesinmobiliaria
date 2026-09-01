@@ -5,7 +5,7 @@ import type { LocationSuggestion } from '@/lib/tokko'
 interface SingleProps {
   value:       string
   onChange:    (val: string) => void
-  onEnter?:    () => void
+  onEnter?:    (newValues?: string[]) => void
   placeholder?: string
   className?:  string
   // multi mode not used
@@ -17,7 +17,7 @@ interface SingleProps {
 interface MultiProps {
   values:          string[]
   onChangeMulti:   (vals: string[]) => void
-  onEnter?:        () => void
+  onEnter?:        (newValues?: string[]) => void
   placeholder?:    string
   className?:      string
   maxValues?:      number
@@ -113,8 +113,22 @@ export default function LocationAutocomplete(props: Props) {
     else if (e.key === 'ArrowUp') { e.preventDefault(); setFocused(f => Math.max(f - 1, -1)) }
     else if (e.key === 'Enter') {
       e.preventDefault()
-      if (focused >= 0) select(suggestions[focused])
-      else { setOpen(false); props.onEnter?.() }
+      const chosen = focused >= 0 ? suggestions[focused] : suggestions[0]
+      if (chosen) {
+        if (isMulti && multiValues!.length < maxValues) {
+          const newVals = [...multiValues!, chosen.searchValue]
+          onMultiChange!(newVals)
+          setQuery('')
+          setOpen(false)
+          props.onEnter?.(newVals)
+        } else if (!isMulti) {
+          select(chosen)
+          props.onEnter?.()
+        }
+      } else {
+        setOpen(false)
+        props.onEnter?.()
+      }
     }
     else if (e.key === 'Escape') setOpen(false)
   }

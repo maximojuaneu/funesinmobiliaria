@@ -21,11 +21,12 @@ export default function HeroSearch() {
   const [type,       setType]      = useState('')
   const [locations,  setLocations] = useState<string[]>([])
 
-  function handleBuscar() {
+  function handleBuscar(newLocations?: string[]) {
+    const locs = newLocations ?? locations
     const params = new URLSearchParams()
-    if (type)              params.set('type', type)
-    if (locations.length)  params.set('location', locations.join(','))
-    gtagEvent('search', { operacion, type, location: locations.join(',') })
+    if (type)        params.set('type', type)
+    if (locs.length) params.set('location', locs.join(','))
+    gtagEvent('search', { operacion, type, location: locs.join(',') })
     const query = params.toString()
     router.push(`/${operacion}${query ? `?${query}` : ''}`)
   }
