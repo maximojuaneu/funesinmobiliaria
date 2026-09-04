@@ -194,7 +194,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
       <div className="pt-2 space-y-3">
         <button
           type="button"
-          onClick={applyFilters}
+          onClick={() => applyFilters()}
           className="w-full btn-primary text-center py-3 text-base"
         >
           Ver propiedades
@@ -218,7 +218,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
         <h3 className="font-bold text-gray-900 font-sans">Filtros</h3>
         <button
           type="button"
-          onClick={applyFilters}
+          onClick={() => applyFilters()}
           className="w-full btn-primary text-center py-2.5"
         >
           Aplicar filtros

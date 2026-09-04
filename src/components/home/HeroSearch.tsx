@@ -75,7 +75,7 @@ export default function HeroSearch() {
 
         <button
           type="button"
-          onClick={handleBuscar}
+          onClick={() => handleBuscar()}
           className="btn-primary text-center rounded-lg"
         >
           Buscar
