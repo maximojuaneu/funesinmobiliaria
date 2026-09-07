@@ -1,6 +1,6 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
 
 const PROPERTY_TYPES: { label: string; value: string }[] = [
@@ -49,6 +49,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
   const [locations,  setLocations]  = useState<string[]>(parseLocations(searchParams.get('location')))
   const [priceFrom,  setPriceFrom]  = useState(searchParams.get('priceFrom') ?? '')
   const [priceTo,    setPriceTo]    = useState(searchParams.get('priceTo')   ?? '')
+  const pendingRef = useRef('')
 
   useEffect(() => {
     setOperation(operationType)
@@ -65,7 +66,10 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
     )
 
   const buildParams = (op: string, overrideLocations?: string[]) => {
-    const locs = overrideLocations ?? locations
+    const pending = pendingRef.current.trim()
+    const base = overrideLocations ?? locations
+    const locs = pending && !base.includes(pending) ? [...base, pending] : base
+    pendingRef.current = ''
     const values: Record<string, string> = {
       type,
       suites:   suites.join(','),
@@ -187,6 +191,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
           onChangeMulti={setLocations}
           maxValues={3}
           onEnter={applyFilters}
+          onQueryChange={q => { pendingRef.current = q }}
         />
       </div>
 
@@ -274,6 +279,7 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
             onChangeMulti={setLocations}
             maxValues={3}
             onEnter={applyFilters}
+            onQueryChange={q => { pendingRef.current = q }}
           />
         </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { gtagEvent } from '@/lib/gtag'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
@@ -20,9 +20,13 @@ export default function HeroSearch() {
   const [operacion,  setOperacion] = useState<'venta' | 'alquiler'>('venta')
   const [type,       setType]      = useState('')
   const [locations,  setLocations] = useState<string[]>([])
+  const pendingRef = useRef('')
 
   function handleBuscar(newLocations?: string[]) {
-    const locs = newLocations ?? locations
+    const pending = pendingRef.current.trim()
+    const base = newLocations ?? locations
+    const locs = pending && !base.includes(pending) ? [...base, pending] : base
+    pendingRef.current = ''
     const params = new URLSearchParams()
     if (type)        params.set('type', type)
     if (locs.length) params.set('location', locs.join(','))
@@ -66,11 +70,12 @@ export default function HeroSearch() {
 
         <LocationAutocomplete
           className="input-field"
-          placeholder="Ciudad o barrio"
+          placeholder="Ciudad, barrio, dirección"
           values={locations}
           onChangeMulti={setLocations}
           maxValues={3}
           onEnter={handleBuscar}
+          onQueryChange={q => { pendingRef.current = q }}
         />
 
         <button

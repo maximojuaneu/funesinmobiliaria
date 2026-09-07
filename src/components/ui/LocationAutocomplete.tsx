@@ -18,6 +18,7 @@ interface MultiProps {
   values:          string[]
   onChangeMulti:   (vals: string[]) => void
   onEnter?:        (newValues?: string[]) => void
+  onQueryChange?:  (q: string) => void
   placeholder?:    string
   className?:      string
   maxValues?:      number
@@ -108,7 +109,20 @@ export default function LocationAutocomplete(props: Props) {
       onMultiChange!(multiValues!.slice(0, -1))
       return
     }
-    if (!open) { if (e.key === 'Enter') props.onEnter?.(); return }
+    if (!open) {
+      if (e.key === 'Enter') {
+        if (isMulti && query.trim() && multiValues!.length < maxValues) {
+          const newVals = [...multiValues!, query.trim()]
+          onMultiChange!(newVals)
+          setQuery('')
+          ;(props as MultiProps).onQueryChange?.('')
+          props.onEnter?.(newVals)
+        } else {
+          props.onEnter?.()
+        }
+      }
+      return
+    }
     if (e.key === 'ArrowDown') { e.preventDefault(); setFocused(f => Math.min(f + 1, suggestions.length - 1)) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setFocused(f => Math.max(f - 1, -1)) }
     else if (e.key === 'Enter') {
@@ -219,7 +233,7 @@ export default function LocationAutocomplete(props: Props) {
             className="flex-1 min-w-[80px] outline-none bg-transparent text-sm text-gray-800 placeholder:text-gray-400"
             placeholder={multiValues!.length === 0 ? (props.placeholder ?? 'Barrio o ciudad') : 'Agregar...'}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { setQuery(e.target.value); (props as MultiProps).onQueryChange?.(e.target.value) }}
             onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setOpen(true)}
             autoComplete="off"
