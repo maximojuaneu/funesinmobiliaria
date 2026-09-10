@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getPropertyById, getOperationPrice, hasCustomAvatar, translateMonth } from '@/lib/tokko'
+import { getPropertyById, getOperationPrice, hasCustomAvatar, translateMonth, formatAmount } from '@/lib/tokko'
 import PhotoGallery from '@/components/properties/PhotoGallery'
 import ShareButton from '@/components/properties/ShareButton'
 import ContactTracker from '@/components/properties/ContactTracker'
@@ -218,11 +218,11 @@ export default async function PropertyPage({ params }: Props) {
 
                       {isTemp ? (
                         <p className="text-3xl font-extrabold text-gray-900">
-                          {sym} {Math.min(...(tempRentPrices.length > 0 ? tempRentPrices.map((p: any) => p.price) : [op.amount])).toLocaleString('es-AR')}
+                          {sym} {formatAmount(Math.min(...(tempRentPrices.length > 0 ? tempRentPrices.map((p: any) => Number(p.price)) : [op.amount])))}
                         </p>
                       ) : (
                         <p className="text-3xl font-extrabold text-gray-900">
-                          {sym} {op.amount.toLocaleString('es-AR')}
+                          {sym} {formatAmount(op.amount)}
                         </p>
                       )}
                     </div>
@@ -326,7 +326,7 @@ export default async function PropertyPage({ params }: Props) {
                       <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="px-4 py-3 text-gray-700">{translateMonth(pr.period) ?? pr.period ?? '-'}</td>
                         <td className="px-4 py-3 font-semibold text-gray-900">
-                          {pr.currency === 'USD' ? 'USD' : '$'} {pr.price.toLocaleString('es-AR')}
+                          {pr.currency === 'USD' ? 'USD' : '$'} {formatAmount(pr.price)}
                         </td>
                       </tr>
                     ))}

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { TokkoProperty } from '@/types/tokko'
-import { getOperationPrice, getMainPhoto, translateMonth } from '@/lib/tokko'
+import { getOperationPrice, getMainPhoto, translateMonth, formatAmount } from '@/lib/tokko'
 
 interface Props {
   properties: TokkoProperty[]
@@ -66,7 +66,7 @@ function SmallCard({ property, operationType }: { property: TokkoProperty; opera
       <div className="min-w-0 flex-1">
         {price && (
           <p className="font-bold text-gray-900 text-sm leading-tight">
-            {price.currency === 'USD' ? 'USD' : '$'} {price.amount.toLocaleString('es-AR')}
+            {price.currency === 'USD' ? 'USD' : '$'} {formatAmount(price.amount)}
             {price.period && (
               <span className="text-xs font-normal text-gray-500 ml-1">({translateMonth(price.period)})</span>
             )}
@@ -316,7 +316,7 @@ export default function PropertyMapView({ properties, operationType, hideSideLis
               <div className="p-4">
                 {price && (
                   <p className="text-lg font-bold text-brand-green leading-tight">
-                    {price.currency === 'USD' ? 'USD' : '$'} {price.amount.toLocaleString('es-AR')}
+                    {price.currency === 'USD' ? 'USD' : '$'} {formatAmount(price.amount)}
                   </p>
                 )}
                 <p className="text-sm font-medium text-gray-800 mt-0.5 leading-snug">{address}</p>

@@ -194,6 +194,11 @@ export async function getPropertiesByDevelopment(devId: number | string): Promis
   return all.filter(p => p.development?.id === Number(devId))
 }
 
+// Formats a number as Argentine-style thousands-separated integer (no locale dependency)
+export function formatAmount(n: number | string): string {
+  return Math.round(Number(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 const MONTH_ES: Record<string, string> = {
   January: 'Enero', February: 'Febrero', March: 'Marzo', April: 'Abril',
   May: 'Mayo', June: 'Junio', July: 'Julio', August: 'Agosto',
@@ -212,7 +217,7 @@ export function getOperationPrice(property: TokkoProperty, type?: 'Sale' | 'Rent
   if (!op) return null
   const price = op.prices[0]
   if (!price) return null
-  return { amount: price.price, currency: price.currency, period: price.period }
+  return { amount: Number(price.price), currency: price.currency, period: price.period }
 }
 
 // Get main photo URL
