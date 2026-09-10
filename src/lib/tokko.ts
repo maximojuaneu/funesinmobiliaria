@@ -217,7 +217,7 @@ export function getOperationPrice(property: TokkoProperty, type?: 'Sale' | 'Rent
   if (!op) return null
   const price = op.prices[0]
   if (!price) return null
-  return { amount: Number(price.price), currency: price.currency, period: price.period }
+  return { amount: Number(price.price), currency: price.currency, period: price.period || undefined }
 }
 
 // Get main photo URL

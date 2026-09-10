@@ -3,7 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRef, useEffect } from 'react'
 import type { TokkoProperty } from '@/types/tokko'
-import { getOperationPrice, getMainPhoto, translateMonth, formatAmount } from '@/lib/tokko'
+import { getOperationPrice, getMainPhoto, translateMonth } from '@/lib/tokko'
+import { formatAmount } from '@/lib/format'
 
 const GAP = 20
 
@@ -49,7 +50,7 @@ function CarouselCard({ property }: { property: TokkoProperty }) {
             {isTemp && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide leading-none mb-0.5">Desde</p>}
             <p className="text-xl font-bold text-gray-900">
               {price.currency === 'USD' ? 'USD' : '$'} {formatAmount(displayAmount ?? price.amount)}
-              {!isTemp && price.period && (
+              {!isTemp && !!price.period && (
                 <span className="text-sm font-normal text-gray-500 ml-1.5">({translateMonth(price.period)})</span>
               )}
             </p>

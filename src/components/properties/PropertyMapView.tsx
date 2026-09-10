@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { TokkoProperty } from '@/types/tokko'
-import { getOperationPrice, getMainPhoto, translateMonth, formatAmount } from '@/lib/tokko'
+import { getOperationPrice, getMainPhoto, translateMonth } from '@/lib/tokko'
+import { formatAmount } from '@/lib/format'
 
 interface Props {
   properties: TokkoProperty[]
