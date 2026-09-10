@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { TokkoProperty } from '@/types/tokko'
-import { getOperationPrice, getMainPhoto } from '@/lib/tokko'
+import { getOperationPrice, getMainPhoto, translateMonth } from '@/lib/tokko'
 
 interface Props {
   properties: TokkoProperty[]
@@ -67,6 +67,9 @@ function SmallCard({ property, operationType }: { property: TokkoProperty; opera
         {price && (
           <p className="font-bold text-gray-900 text-sm leading-tight">
             {price.currency === 'USD' ? 'USD' : '$'} {price.amount.toLocaleString('es-AR')}
+            {price.period && (
+              <span className="text-xs font-normal text-gray-500 ml-1">({translateMonth(price.period)})</span>
+            )}
           </p>
         )}
         <p className="text-xs text-gray-600 truncate mt-0.5">{address}</p>

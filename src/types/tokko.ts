@@ -10,7 +10,9 @@ export interface TokkoPhoto {
 export interface TokkoPrice {
   price: number
   currency: string
-  period: number
+  period?: string
+  period_number?: number
+  is_promotional?: boolean
 }
 
 export interface TokkoOperation {

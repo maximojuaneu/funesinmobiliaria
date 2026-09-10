@@ -194,15 +194,25 @@ export async function getPropertiesByDevelopment(devId: number | string): Promis
   return all.filter(p => p.development?.id === Number(devId))
 }
 
+const MONTH_ES: Record<string, string> = {
+  January: 'Enero', February: 'Febrero', March: 'Marzo', April: 'Abril',
+  May: 'Mayo', June: 'Junio', July: 'Julio', August: 'Agosto',
+  September: 'Septiembre', October: 'Octubre', November: 'Noviembre', December: 'Diciembre',
+}
+export function translateMonth(period?: string): string | undefined {
+  if (!period) return undefined
+  return MONTH_ES[period] ?? period
+}
+
 // Get the price for a given operation type
 export function getOperationPrice(property: TokkoProperty, type?: 'Sale' | 'Rent' | 'Temporary Rent') {
   const op = type
-    ? property.operations.find(o => o.operation_type === type)
+    ? property.operations.find(o => o.operation_type.toLowerCase() === type.toLowerCase())
     : property.operations[0]
   if (!op) return null
   const price = op.prices[0]
   if (!price) return null
-  return { amount: price.price, currency: price.currency }
+  return { amount: price.price, currency: price.currency, period: price.period }
 }
 
 // Get main photo URL
@@ -219,9 +229,9 @@ export function getDevelopmentCover(photos: TokkoPhoto[]): string {
 }
 
 // Human-readable operation label
-export function getOperationLabel(type: 'Sale' | 'Rent' | 'Temporary Rent'): string {
+export function getOperationLabel(type: string): string {
   if (type === 'Sale') return 'VENTA'
-  if (type === 'Temporary Rent') return 'ALQUILER TEMP.'
+  if (type.toLowerCase() === 'temporary rent') return 'ALQUILER TEMP.'
   return 'ALQUILER'
 }
 

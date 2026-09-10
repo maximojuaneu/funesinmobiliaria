@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getPropertyById, getOperationPrice, hasCustomAvatar } from '@/lib/tokko'
+import { getPropertyById, getOperationPrice, hasCustomAvatar, translateMonth } from '@/lib/tokko'
 import PhotoGallery from '@/components/properties/PhotoGallery'
 import ShareButton from '@/components/properties/ShareButton'
 import ContactTracker from '@/components/properties/ContactTracker'
@@ -95,11 +95,21 @@ export default async function PropertyPage({ params }: Props) {
   const opType  = property.operations?.[0]?.operation_type as 'Sale' | 'Rent' | 'Temporary Rent' | undefined
   const photos  = property.photos?.filter((p: any) => !p.is_blueprint) ?? []
 
+  // Normalize operation_type (API returns 'Temporary rent' with lowercase r)
+  const normalizeOpType = (t: string): 'Sale' | 'Rent' | 'Temporary Rent' =>
+    t.toLowerCase() === 'temporary rent' ? 'Temporary Rent' : t as 'Sale' | 'Rent'
+
   // Collect all operations with prices
   const allOperations = (property.operations ?? []).map((op: any) => {
-    const opPrice = getOperationPrice(property, op.operation_type)
-    return opPrice ? { type: op.operation_type as 'Sale' | 'Rent' | 'Temporary Rent', ...opPrice } : null
-  }).filter(Boolean) as { type: 'Sale' | 'Rent' | 'Temporary Rent'; amount: number; currency: string }[]
+    const normalized = normalizeOpType(op.operation_type)
+    const opPrice = getOperationPrice(property, normalized)
+    return opPrice ? { type: normalized, ...opPrice } : null
+  }).filter(Boolean) as { type: 'Sale' | 'Rent' | 'Temporary Rent'; amount: number; currency: string; period?: string }[]
+
+  // For temporary rent: collect ALL prices (one per month)
+  const tempRentPrices = (property.operations ?? [])
+    .find((op: any) => op.operation_id === 3 || op.operation_type === 'Temporary Rent')
+    ?.prices ?? []
 
   // Surfaces (rounded, only show if > 0)
   const toHa = (v: any) => { const n = parseFloat(v); return n > 0 ? Math.round(n / 10000).toString() : null }
@@ -197,19 +207,23 @@ export default async function PropertyPage({ params }: Props) {
           {/* Price + contact buttons */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
             {allOperations.length > 0 && (
-              <div className={`mb-1 ${allOperations.length > 1 ? 'space-y-3' : ''}`}>
+              <div className={`mb-1 ${allOperations.length > 1 ? 'space-y-4' : ''}`}>
                 {allOperations.map((op) => {
-                  const label = op.type === 'Sale' ? 'Venta' : op.type === 'Temporary Rent' ? 'Alquiler temporario' : 'Alquiler'
+                  const isTemp = op.type === 'Temporary Rent'
+                  const label = op.type === 'Sale' ? 'Venta' : isTemp ? 'Alquiler Desde' : 'Alquiler'
+                  const sym = op.currency === 'USD' ? 'USD' : '$'
                   return (
                     <div key={op.type}>
-                      {allOperations.length > 1 && (
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">{label}</p>
-                      )}
-                      <p className="text-3xl font-extrabold text-gray-900">
-                        {op.currency === 'USD' ? 'USD' : '$'} {op.amount.toLocaleString('es-AR')}
-                      </p>
-                      {allOperations.length === 1 && (
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-0.5">{label}</p>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+
+                      {isTemp ? (
+                        <p className="text-3xl font-extrabold text-gray-900">
+                          {sym} {Math.min(...(tempRentPrices.length > 0 ? tempRentPrices.map((p: any) => p.price) : [op.amount])).toLocaleString('es-AR')}
+                        </p>
+                      ) : (
+                        <p className="text-3xl font-extrabold text-gray-900">
+                          {sym} {op.amount.toLocaleString('es-AR')}
+                        </p>
                       )}
                     </div>
                   )
@@ -294,6 +308,33 @@ export default async function PropertyPage({ params }: Props) {
 
         {/* ── Services + Description + Map + Video (mobile: 3rd, desktop: bottom-left) ── */}
         <div className="lg:col-span-2 space-y-8">
+
+          {/* Disponibilidad - solo alquileres temporarios */}
+          {tempRentPrices.length > 0 && (
+            <div>
+              <h2 className="text-xl font-bold mb-3">Disponibilidad</h2>
+              <div className="overflow-hidden rounded-xl border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-800 text-white">
+                      <th className="text-left px-4 py-3 font-semibold">Período</th>
+                      <th className="text-left px-4 py-3 font-semibold">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tempRentPrices.map((pr: any, i: number) => (
+                      <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <td className="px-4 py-3 text-gray-700">{translateMonth(pr.period) ?? pr.period ?? '-'}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900">
+                          {pr.currency === 'USD' ? 'USD' : '$'} {pr.price.toLocaleString('es-AR')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Services */}
           {(() => {

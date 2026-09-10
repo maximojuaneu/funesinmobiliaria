@@ -3,13 +3,20 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRef, useEffect } from 'react'
 import type { TokkoProperty } from '@/types/tokko'
-import { getOperationPrice, getMainPhoto } from '@/lib/tokko'
+import { getOperationPrice, getMainPhoto, translateMonth } from '@/lib/tokko'
 
 const GAP = 20
 
 function CarouselCard({ property }: { property: TokkoProperty }) {
-  const opType  = property.operations[0]?.operation_type
-  const price   = getOperationPrice(property, opType)
+  const opType     = property.operations[0]?.operation_type
+  const isTemp     = opType?.toLowerCase() === 'temporary rent'
+  const price      = getOperationPrice(property, opType)
+  const tempPrices = isTemp
+    ? (property.operations.find((o: any) => o.operation_type?.toLowerCase() === 'temporary rent')?.prices ?? [])
+    : []
+  const displayAmount = isTemp && tempPrices.length > 0
+    ? Math.min(...tempPrices.map((p: any) => p.price))
+    : price?.amount
   const photo   = getMainPhoto(property)
   const address = (property as any).fake_address || property.address
   const city    = property.location?.full_location?.split(' | ')[2] ?? ''
@@ -38,9 +45,15 @@ function CarouselCard({ property }: { property: TokkoProperty }) {
       </div>
       <div className="p-4">
         {price && (
-          <p className="text-xl font-bold text-gray-900 mb-1">
-            {price.currency === 'USD' ? 'USD' : '$'} {price.amount.toLocaleString('es-AR')}
-          </p>
+          <div className="mb-1">
+            {isTemp && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide leading-none mb-0.5">Desde</p>}
+            <p className="text-xl font-bold text-gray-900">
+              {price.currency === 'USD' ? 'USD' : '$'} {(displayAmount ?? price.amount).toLocaleString('es-AR')}
+              {!isTemp && price.period && (
+                <span className="text-sm font-normal text-gray-500 ml-1.5">({translateMonth(price.period)})</span>
+              )}
+            </p>
+          </div>
         )}
         <p className="text-sm font-medium text-gray-700 truncate">{address}</p>
         {city && <p className="text-sm text-gray-500 truncate">{city}</p>}
