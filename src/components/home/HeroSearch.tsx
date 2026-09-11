@@ -17,7 +17,7 @@ const PROPERTY_TYPES = [
 
 export default function HeroSearch() {
   const router = useRouter()
-  const [operacion,  setOperacion] = useState<'venta' | 'alquiler'>('venta')
+  const [operacion,  setOperacion] = useState<'venta' | 'alquiler' | 'temporario'>('venta')
   const [type,       setType]      = useState('')
   const [locations,  setLocations] = useState<string[]>([])
   const pendingRef = useRef('')
@@ -30,27 +30,35 @@ export default function HeroSearch() {
     const params = new URLSearchParams()
     if (type)        params.set('type', type)
     if (locs.length) params.set('location', locs.join(','))
+    if (operacion === 'temporario') params.set('temp', '1')
     gtagEvent('search', { operacion, type, location: locs.join(',') })
     const query = params.toString()
-    router.push(`/${operacion}${query ? `?${query}` : ''}`)
+    const basePath = operacion === 'temporario' ? '/alquiler' : `/${operacion}`
+    router.push(`${basePath}${query ? `?${query}` : ''}`)
   }
+
+  const TABS: { value: 'venta' | 'alquiler' | 'temporario'; label: string }[] = [
+    { value: 'venta',      label: 'Venta' },
+    { value: 'alquiler',   label: 'Alquiler' },
+    { value: 'temporario', label: 'Temporario' },
+  ]
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-3xl mx-auto text-left">
       {/* Operación toggle */}
-      <div className="flex gap-1 mb-5">
-        {(['venta', 'alquiler'] as const).map(t => (
+      <div className="flex gap-1 mb-5 flex-wrap">
+        {TABS.map(t => (
           <button
-            key={t}
+            key={t.value}
             type="button"
-            onClick={() => setOperacion(t)}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${
-              operacion === t
+            onClick={() => setOperacion(t.value)}
+            className={`px-3 py-2 sm:px-5 rounded-lg text-xs sm:text-sm font-semibold transition-colors ${
+              operacion === t.value
                 ? 'bg-brand-green text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t.label}
           </button>
         ))}
       </div>
