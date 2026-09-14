@@ -328,26 +328,14 @@ export default function FlyerGeneratorClient() {
     const city   = property?.location?.name ?? ''
     const name   = `Flyer-${city ? `${addr} - ${city}` : addr}`.replace(/[<>:"/\\|?*]/g, '').trim()
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return
-      const file = new File([blob], `${name}.jpg`, { type: 'image/jpeg' })
-
-      // En mobile usamos Web Share API (iOS/Android) si está disponible
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: name })
-          return
-        } catch (e) {
-          if ((e as Error).name === 'AbortError') return // usuario canceló
-        }
-      }
-
-      // Fallback desktop: blob URL (más confiable que data URI)
-      const url  = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url; link.download = `${name}.jpg`; link.click()
-      URL.revokeObjectURL(url)
-    }, 'image/jpeg', 0.96)
+    // toDataURL es síncrono: el click ocurre dentro del mismo gesto del usuario,
+    // garantizando la descarga automática en todos los navegadores.
+    const url  = canvas.toDataURL('image/jpeg', 0.96)
+    const link = document.createElement('a')
+    link.href = url; link.download = `${name}.jpg`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition-colors'
@@ -368,7 +356,7 @@ export default function FlyerGeneratorClient() {
           <div className="flex gap-3">
             <input
               className="input-field flex-1"
-              placeholder="ID de propiedad en Tokko"
+              placeholder="ID de la propiedad en Página Web"
               value={propId}
               onChange={e => setPropId(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && fetchProperty()}
