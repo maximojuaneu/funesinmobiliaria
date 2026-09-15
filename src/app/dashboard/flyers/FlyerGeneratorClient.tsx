@@ -366,6 +366,7 @@ export default function FlyerGeneratorClient() {
   const labelClass = 'block text-xs text-gray-500 mb-1'
 
   return (
+    <>
     <div className="grid lg:grid-cols-2 gap-8 items-start">
 
       {/* ── Left: Steps ── */}
@@ -565,12 +566,13 @@ export default function FlyerGeneratorClient() {
       </div>
     </div>
 
-    {/* Toast de confirmación */}
-    {toast && (
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-xl animate-fade-in">
-        <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-        {toast}
-      </div>
-    )}
+      {/* Toast de confirmación */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-xl animate-fade-in">
+          <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          {toast}
+        </div>
+      )}
+    </>
   )
 }
