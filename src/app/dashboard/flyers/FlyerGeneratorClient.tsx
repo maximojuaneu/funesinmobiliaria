@@ -52,6 +52,7 @@ function measureTextLS(ctx: CanvasRenderingContext2D, text: string, spacing: num
 
 export default function FlyerGeneratorClient() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const blobRef   = useRef<Blob | null>(null)   // blob pre-generado para descarga instantánea
   const [propId,        setPropId]        = useState('')
   const [property,      setProperty]      = useState<any>(null)
   const [photos,        setPhotos]        = useState<string[]>([])
@@ -59,6 +60,12 @@ export default function FlyerGeneratorClient() {
   const [loading,       setLoading]       = useState(false)
   const [rendering,     setRendering]     = useState(false)
   const [ready,         setReady]         = useState(false)
+  const [toast,         setToast]         = useState<string | null>(null)
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
 
   // Campos editables del flyer
   const [customTipo,    setCustomTipo]    = useState('')
@@ -310,6 +317,8 @@ export default function FlyerGeneratorClient() {
       ctx.drawImage(logoImg, 0, 0, W, H)
 
       setReady(true)
+      // Pre-generar blob para descarga/share instantáneo al tocar el botón
+      canvas.toBlob(blob => { blobRef.current = blob }, 'image/jpeg', 0.96)
     } catch (e) {
       console.error('Flyer error:', e)
     } finally {
@@ -322,20 +331,35 @@ export default function FlyerGeneratorClient() {
     else setReady(false)
   }, [drawFlyer])
 
-  const download = () => {
-    const canvas = canvasRef.current!
-    const addr   = property?.fake_address || property?.address || customAddress || customTipo || 'manual'
-    const city   = property?.location?.name ?? ''
-    const name   = `Flyer-${city ? `${addr} - ${city}` : addr}`.replace(/[<>:"/\\|?*]/g, '').trim()
+  const download = async () => {
+    const blob = blobRef.current
+    if (!blob) return
+    const addr = property?.fake_address || property?.address || customAddress || customTipo || 'manual'
+    const city = property?.location?.name ?? ''
+    const name = `Flyer-${city ? `${addr} - ${city}` : addr}`.replace(/[<>:"/\\|?*]/g, '').trim()
+    const file = new File([blob], `${name}.jpg`, { type: 'image/jpeg' })
 
-    // toDataURL es síncrono: el click ocurre dentro del mismo gesto del usuario,
-    // garantizando la descarga automática en todos los navegadores.
-    const url  = canvas.toDataURL('image/jpeg', 0.96)
+    // Mobile: Web Share API → el usuario toca "Guardar imagen" en la hoja nativa del sistema
+    if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: name })
+        showToast('Guardado en galería del dispositivo')
+        return
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return // usuario canceló
+        // Si falla el share, caer al link de descarga
+      }
+    }
+
+    // Desktop / fallback: descarga directa
+    const url  = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url; link.download = `${name}.jpg`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast('Flyer descargado')
   }
 
   const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition-colors'
@@ -540,5 +564,13 @@ export default function FlyerGeneratorClient() {
         )}
       </div>
     </div>
+
+    {/* Toast de confirmación */}
+    {toast && (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-xl animate-fade-in">
+        <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+        {toast}
+      </div>
+    )}
   )
 }
