@@ -240,9 +240,11 @@ export default function AutorizacionClient() {
     setGenerating(true)
     setCopied(false)
     try {
-      const customParas = paraRefsArr.current.map((ref, i) =>
-        customizedSet.current.has(i) ? (ref?.textContent ?? '') : ''
-      )
+      // null = no editado (usar default) | '' = borrado (ocultar) | 'texto' = personalizado
+      const customParas = paraRefsArr.current.map((ref, i) => {
+        if (!customizedSet.current.has(i)) return null
+        return ref?.textContent?.trim() ?? ''
+      })
       const res = await fetch('/api/autorizaciones/pending', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

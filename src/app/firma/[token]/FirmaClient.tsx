@@ -17,7 +17,7 @@ interface TokenData {
   fecha:              string
   requiredSignatures: number
   existingSignatures: SignatureData[]
-  customParas?:       string[]
+  customParas?:       (string | null)[]
 }
 
 function daysToWords(n: number): string {
@@ -381,7 +381,8 @@ export default function FirmaClient({ token }: { token: string }) {
           </div>
           <div className="p-6 text-sm text-gray-800 leading-relaxed space-y-4">
 
-            {customParas?.[0] ? <p>{customParas[0]}</p> : (
+            {/* null=default | ''=oculto | 'texto'=personalizado */}
+            {customParas?.[0] === '' ? null : customParas?.[0] ? <p>{customParas[0]}</p> : (
               <p>
                 Por la presente autorizo{exclusividad && <strong> en exclusividad</strong>} a{' '}
                 <strong>FUNES INMOBILIARIA</strong> representada por C.I Fabio H. Juaneu Mat. 0298 COCIR
@@ -395,7 +396,7 @@ export default function FirmaClient({ token }: { token: string }) {
 
             <hr className="border-gray-200" />
 
-            {customParas?.[1] ? <p>{customParas[1]}</p> : (
+            {customParas?.[1] === '' ? null : customParas?.[1] ? <p>{customParas[1]}</p> : (
               <p>
                 El precio de venta es de{' '}
                 <strong>{precioLetras ? `${precioLetras} dólares` : '……………………………………'}</strong>{' '}
@@ -409,7 +410,7 @@ export default function FirmaClient({ token }: { token: string }) {
               </p>
             )}
 
-            {customParas?.[2] ? <p>{customParas[2]}</p> : (
+            {customParas?.[2] === '' ? null : customParas?.[2] ? <p>{customParas[2]}</p> : (
               <p>
                 La presente autorización es amplia e irrevocablemente valida por{' '}
                 <strong>{periodoText}</strong> a partir del{' '}
@@ -421,7 +422,7 @@ export default function FirmaClient({ token }: { token: string }) {
               </p>
             )}
 
-            {customParas?.[3] ? <p>{customParas[3]}</p> : (
+            {customParas?.[3] === '' ? null : customParas?.[3] ? <p>{customParas[3]}</p> : (
               <p>
                 Si la operación se concretara durante el período de la vigencia de la presente
                 autorización en forma directa entre vendedor y comprador sin informar a la
@@ -432,7 +433,7 @@ export default function FirmaClient({ token }: { token: string }) {
               </p>
             )}
 
-            {customParas?.[4] ? <p>{customParas[4]}</p> : (
+            {customParas?.[4] === '' ? null : customParas?.[4] ? <p>{customParas[4]}</p> : (
               <p>
                 Todos los gastos que demande la concreción del negocio, publicidad, carteles,
                 movilidad, etc. serán soportados por la inmobiliaria interviniente. Autorizo al
@@ -442,7 +443,7 @@ export default function FirmaClient({ token }: { token: string }) {
               </p>
             )}
 
-            {customParas?.[5] ? <p>{customParas[5]}</p> : (
+            {customParas?.[5] === '' ? null : customParas?.[5] ? <p>{customParas[5]}</p> : (
               <p>
                 Además, autorizo a que publiquen en los medios de comunicación tradicionales y como
                 así también en los medios de comunicación digitales y las redes sociales, y que
@@ -450,7 +451,7 @@ export default function FirmaClient({ token }: { token: string }) {
               </p>
             )}
 
-            {customParas?.[6] ? <p className="font-medium">{customParas[6]}</p> : (
+            {customParas?.[6] === '' ? null : customParas?.[6] ? <p className="font-medium">{customParas[6]}</p> : (
               <p className="font-medium">
                 Funes, a los <strong>{dia}</strong> días del mes de <strong>{mes}</strong> de{' '}
                 <strong>{año}</strong>.-

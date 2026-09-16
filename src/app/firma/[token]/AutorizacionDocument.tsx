@@ -74,7 +74,7 @@ export interface AutorizacionData {
   exclusividad:   boolean
   periodo?:       string
   fecha:          string
-  customParas?:   string[]
+  customParas?:   (string | null)[]
   signatures?:    SignatureData[]
   // Campos individuales (retrocompatibilidad)
   titularNombre:  string
@@ -151,8 +151,8 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
           <Image src={logoUrl} style={s.logo} />
         </View>
 
-        {/* Cuerpo del documento */}
-        {data.customParas?.[0] ? (
+        {/* Cuerpo del documento — null=default, ''=oculto, 'texto'=personalizado */}
+        {data.customParas?.[0] === '' ? null : data.customParas?.[0] ? (
           <Text style={s.body}>{data.customParas[0]}</Text>
         ) : (
           <Text style={s.body}>
@@ -173,7 +173,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
 
         <View style={s.rule} />
 
-        {data.customParas?.[1] ? (
+        {data.customParas?.[1] === '' ? null : data.customParas?.[1] ? (
           <Text style={s.body}>{data.customParas[1]}</Text>
         ) : (
           <Text style={s.body}>
@@ -185,7 +185,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
           </Text>
         )}
 
-        {data.customParas?.[2] ? (
+        {data.customParas?.[2] === '' ? null : data.customParas?.[2] ? (
           <Text style={s.body}>{data.customParas[2]}</Text>
         ) : (
           <Text style={s.body}>
@@ -201,7 +201,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
           </Text>
         )}
 
-        {data.customParas?.[3] ? (
+        {data.customParas?.[3] === '' ? null : data.customParas?.[3] ? (
           <Text style={s.body}>{data.customParas[3]}</Text>
         ) : (
           <Text style={s.body}>
@@ -209,7 +209,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
           </Text>
         )}
 
-        {data.customParas?.[4] ? (
+        {data.customParas?.[4] === '' ? null : data.customParas?.[4] ? (
           <Text style={s.body}>{data.customParas[4]}</Text>
         ) : (
           <Text style={s.body}>
@@ -217,7 +217,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
           </Text>
         )}
 
-        {data.customParas?.[5] ? (
+        {data.customParas?.[5] === '' ? null : data.customParas?.[5] ? (
           <Text style={s.body}>{data.customParas[5]}</Text>
         ) : (
           <Text style={s.body}>
@@ -225,7 +225,7 @@ export function AutorizacionDocument({ data, logoUrl }: { data: AutorizacionData
           </Text>
         )}
 
-        {data.customParas?.[6] ? (
+        {data.customParas?.[6] === '' ? null : data.customParas?.[6] ? (
           <Text style={[s.body, { marginTop: 4 }]}>{data.customParas[6]}</Text>
         ) : (
           <Text style={[s.body, { marginTop: 4 }]}>
