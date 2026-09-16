@@ -17,6 +17,7 @@ interface TokenData {
   fecha:              string
   requiredSignatures: number
   existingSignatures: SignatureData[]
+  customParas?:       string[]
 }
 
 function daysToWords(n: number): string {
@@ -311,7 +312,7 @@ export default function FirmaClient({ token }: { token: string }) {
     </div>
   )
 
-  const { fecha, inmuebleDir, inmuebleCiudad, provincia, partida, precio, precioLetras, exclusividad, agenteNombre, periodo } = data
+  const { fecha, inmuebleDir, inmuebleCiudad, provincia, partida, precio, precioLetras, exclusividad, agenteNombre, periodo, customParas } = data
   const dia = String(parseInt(fecha.split('/')[0] ?? ''))
   const mes = (['enero','febrero','marzo','abril','mayo','junio',
                 'julio','agosto','septiembre','octubre','noviembre','diciembre'])[parseInt(fecha.split('/')[1] ?? '1') - 1] ?? ''
@@ -380,67 +381,81 @@ export default function FirmaClient({ token }: { token: string }) {
           </div>
           <div className="p-6 text-sm text-gray-800 leading-relaxed space-y-4">
 
-            <p>
-              Por la presente autorizo{exclusividad && <strong> en exclusividad</strong>} a{' '}
-              <strong>FUNES INMOBILIARIA</strong> representada por C.I Fabio H. Juaneu Mat. 0298 COCIR
-              y/o C.I Máximo F. Juaneu Mat. 2708 COCIR, con oficinas en calle Córdoba 2115 (s/ruta 9)
-              Funes; para que gestionen la venta, por mi cuenta y orden, de la propiedad ubicada en{' '}
-              <strong>{inmuebleDir}</strong> de la ciudad de{' '}
-              <strong>{inmuebleCiudad}</strong>, Pcia de <strong>{provincia}</strong>
-              {partida ? <>, denominada con partida inmobiliaria N° <strong>{partida}</strong></> : null}
-            </p>
+            {customParas?.[0] ? <p>{customParas[0]}</p> : (
+              <p>
+                Por la presente autorizo{exclusividad && <strong> en exclusividad</strong>} a{' '}
+                <strong>FUNES INMOBILIARIA</strong> representada por C.I Fabio H. Juaneu Mat. 0298 COCIR
+                y/o C.I Máximo F. Juaneu Mat. 2708 COCIR, con oficinas en calle Córdoba 2115 (s/ruta 9)
+                Funes; para que gestionen la venta, por mi cuenta y orden, de la propiedad ubicada en{' '}
+                <strong>{inmuebleDir}</strong> de la ciudad de{' '}
+                <strong>{inmuebleCiudad}</strong>, Pcia de <strong>{provincia}</strong>
+                {partida ? <>, denominada con partida inmobiliaria N° <strong>{partida}</strong></> : null}
+              </p>
+            )}
 
             <hr className="border-gray-200" />
 
-            <p>
-              El precio de venta es de{' '}
-              <strong>{precioLetras ? `${precioLetras} dólares` : '……………………………………'}</strong>{' '}
-              (U$S <strong>{precio || '…………'}</strong>), siendo la forma de pago a convenir.
-              En caso de vender el inmueble abonare a Uds. en concepto de honorarios
-              inmobiliarios, el equivalente al tres por ciento (3%) mas IVA del valor total de la
-              compra-venta. Garantizo a ustedes que los títulos de propiedad son perfectos y sobre
-              esta base pueden vender. Los impuestos que graven el inmueble deberán ser abonados
-              por mi parte hasta el día de la escrituración a favor de los compradores (salvo
-              acuerdo contrario).
-            </p>
+            {customParas?.[1] ? <p>{customParas[1]}</p> : (
+              <p>
+                El precio de venta es de{' '}
+                <strong>{precioLetras ? `${precioLetras} dólares` : '……………………………………'}</strong>{' '}
+                (U$S <strong>{precio || '…………'}</strong>), siendo la forma de pago a convenir.
+                En caso de vender el inmueble abonare a Uds. en concepto de honorarios
+                inmobiliarios, el equivalente al tres por ciento (3%) mas IVA del valor total de la
+                compra-venta. Garantizo a ustedes que los títulos de propiedad son perfectos y sobre
+                esta base pueden vender. Los impuestos que graven el inmueble deberán ser abonados
+                por mi parte hasta el día de la escrituración a favor de los compradores (salvo
+                acuerdo contrario).
+              </p>
+            )}
 
-            <p>
-              La presente autorización es amplia e irrevocablemente valida por{' '}
-              <strong>{periodoText}</strong> a partir del{' '}
-              <strong>{dia}</strong> de <strong>{mes}</strong> de <strong>{año}</strong>,
-              quedando automáticamente prorrogada a partir del vencimiento por periodos de treinta
-              días (30) sucesivos si no comunicara fehacientemente la voluntad de dejarla sin
-              efecto, obligándome a respetar la operación como bien realizada en las condiciones y
-              plazos establecidos en la autorización.
-            </p>
+            {customParas?.[2] ? <p>{customParas[2]}</p> : (
+              <p>
+                La presente autorización es amplia e irrevocablemente valida por{' '}
+                <strong>{periodoText}</strong> a partir del{' '}
+                <strong>{dia}</strong> de <strong>{mes}</strong> de <strong>{año}</strong>,
+                quedando automáticamente prorrogada a partir del vencimiento por periodos de treinta
+                días (30) sucesivos si no comunicara fehacientemente la voluntad de dejarla sin
+                efecto, obligándome a respetar la operación como bien realizada en las condiciones y
+                plazos establecidos en la autorización.
+              </p>
+            )}
 
-            <p>
-              Si la operación se concretara durante el período de la vigencia de la presente
-              autorización en forma directa entre vendedor y comprador sin informar a la
-              inmobiliaria, o si luego de vencido el plazo se realizara la operación compraventa
-              con clientes que hubieran efectuado tratativas con Uds, se le reconocerá los
-              honorarios inmobiliarios pactados mas los honorarios inmobiliarios de la parte
-              compradora del 3% mas IVA.
-            </p>
+            {customParas?.[3] ? <p>{customParas[3]}</p> : (
+              <p>
+                Si la operación se concretara durante el período de la vigencia de la presente
+                autorización en forma directa entre vendedor y comprador sin informar a la
+                inmobiliaria, o si luego de vencido el plazo se realizara la operación compraventa
+                con clientes que hubieran efectuado tratativas con Uds, se le reconocerá los
+                honorarios inmobiliarios pactados mas los honorarios inmobiliarios de la parte
+                compradora del 3% mas IVA.
+              </p>
+            )}
 
-            <p>
-              Todos los gastos que demande la concreción del negocio, publicidad, carteles,
-              movilidad, etc. serán soportados por la inmobiliaria interviniente. Autorizo al
-              corredor inmobiliario a tomar reservas de ofertas y retener el monto entregado en
-              tal concepto hasta el día la firma del boleto/cesión/adhesión o escritura traslativa
-              de dominio (lo que ocurra primero).
-            </p>
+            {customParas?.[4] ? <p>{customParas[4]}</p> : (
+              <p>
+                Todos los gastos que demande la concreción del negocio, publicidad, carteles,
+                movilidad, etc. serán soportados por la inmobiliaria interviniente. Autorizo al
+                corredor inmobiliario a tomar reservas de ofertas y retener el monto entregado en
+                tal concepto hasta el día la firma del boleto/cesión/adhesión o escritura traslativa
+                de dominio (lo que ocurra primero).
+              </p>
+            )}
 
-            <p>
-              Además, autorizo a que publiquen en los medios de comunicación tradicionales y como
-              así también en los medios de comunicación digitales y las redes sociales, y que
-              coloquen cartel de VENTA en la propiedad.-
-            </p>
+            {customParas?.[5] ? <p>{customParas[5]}</p> : (
+              <p>
+                Además, autorizo a que publiquen en los medios de comunicación tradicionales y como
+                así también en los medios de comunicación digitales y las redes sociales, y que
+                coloquen cartel de VENTA en la propiedad.-
+              </p>
+            )}
 
-            <p className="font-medium">
-              Funes, a los <strong>{dia}</strong> días del mes de <strong>{mes}</strong> de{' '}
-              <strong>{año}</strong>.-
-            </p>
+            {customParas?.[6] ? <p className="font-medium">{customParas[6]}</p> : (
+              <p className="font-medium">
+                Funes, a los <strong>{dia}</strong> días del mes de <strong>{mes}</strong> de{' '}
+                <strong>{año}</strong>.-
+              </p>
+            )}
 
           </div>
         </div>
