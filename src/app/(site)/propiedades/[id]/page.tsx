@@ -174,6 +174,7 @@ export default async function PropertyPage({ params }: Props) {
               { label: 'Superficie total',  val: supTotal   ? `${supTotal} m²`   : supTerreno ? `${supTerreno} m²` : null },
               { label: 'Metros de frente',  val: frente     ? `${frente} m`      : null },
               { label: 'Metros de fondo',   val: fondo      ? `${fondo} m`       : null },
+              { label: 'Orientación',       val: property.orientation || null, icon: '🧭' },
             ] : [
               { label: 'Dormitorios',       val: property.suite_amount      || null },
               { label: 'Baños',             val: property.bathroom_amount   || null },
@@ -199,6 +200,13 @@ export default async function PropertyPage({ params }: Props) {
               </div>
             )}
           </div>
+
+          {/* Expensas — solo si tiene valor cargado en Tokko */}
+          {property.expenses && Number(property.expenses) > 0 && (
+            <p className="text-gray-600 leading-relaxed">
+              <span className="font-semibold text-gray-800">Expensas:</span> $ {formatAmount(Number(property.expenses))}
+            </p>
+          )}
         </div>
 
         {/* ── Sidebar (mobile: 2nd — between characteristics and services; desktop: right column) ── */}

@@ -133,6 +133,7 @@ export default function LocationAutocomplete(props: Props) {
           const newVals = [...multiValues!, chosen.searchValue]
           onMultiChange!(newVals)
           setQuery('')
+          ;(props as MultiProps).onQueryChange?.('')
           setOpen(false)
           props.onEnter?.(newVals)
         } else if (!isMulti) {

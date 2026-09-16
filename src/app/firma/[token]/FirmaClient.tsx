@@ -1,20 +1,22 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import type { AutorizacionData } from './AutorizacionDocument'
+import type { AutorizacionData, SignatureData } from './AutorizacionDocument'
 
 interface TokenData {
-  agenteNombre:   string
-  agenteEmail:    string
-  inmuebleDir:    string
-  inmuebleCiudad: string
-  provincia:      string
-  partida:        string
-  precio:         string
-  precioLetras:   string
-  exclusividad:   boolean
-  periodo?:       string
-  fecha:          string
+  agenteNombre:       string
+  agenteEmail:        string
+  inmuebleDir:        string
+  inmuebleCiudad:     string
+  provincia:          string
+  partida:            string
+  precio:             string
+  precioLetras:       string
+  exclusividad:       boolean
+  periodo?:           string
+  fecha:              string
+  requiredSignatures: number
+  existingSignatures: SignatureData[]
 }
 
 function daysToWords(n: number): string {
@@ -35,14 +37,6 @@ function daysToWords(n: number): string {
   return r.trim()
 }
 
-function parseFechaLegible(fecha: string) {
-  const parts = fecha.split('/')
-  if (parts.length !== 3) return fecha
-  const meses = ['enero','febrero','marzo','abril','mayo','junio',
-                 'julio','agosto','septiembre','octubre','noviembre','diciembre']
-  return `${parseInt(parts[0])} de ${meses[parseInt(parts[1]) - 1] ?? parts[1]} de ${parts[2]}`
-}
-
 function toBase64(url: string): Promise<string> {
   return fetch(url).then(r => r.blob()).then(
     blob => new Promise<string>((res, rej) => {
@@ -59,32 +53,39 @@ const inputCls = 'border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gra
 export default function FirmaClient({ token }: { token: string }) {
   const [data,   setData]   = useState<TokenData | null>(null)
   const [error,  setError]  = useState(false)
-  const [signed, setSigned] = useState(false)
+  const [signed, setSigned] = useState(false)   // link completamente consumido
 
-  const [nombre,    setNombre]    = useState('')
-  const [dni,       setDni]       = useState('')
-  const [celular,   setCelular]   = useState('')
-  const [email,     setEmail]     = useState('')
+  const [nombre,  setNombre]  = useState('')
+  const [dni,     setDni]     = useState('')
+  const [celular, setCelular] = useState('')
+  const [email,   setEmail]   = useState('')
 
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const isDrawing = useRef(false)
-  const [hasSigned, setHasSigned] = useState(false)
-  const [loading,   setLoading]   = useState(false)
-  const [done,      setDone]      = useState(false)
+  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const isDrawing  = useRef(false)
+  const [hasSigned,   setHasSigned]   = useState(false)
+  const [loading,     setLoading]     = useState(false)
+  const [done,        setDone]        = useState(false)
+  const [isComplete,  setIsComplete]  = useState(false)
+  const [sigCount,    setSigCount]    = useState(0)
+  const [sigRequired, setSigRequired] = useState(1)
 
   useEffect(() => {
     fetch(`/api/autorizaciones/pending/${token}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then((d: TokenData & { signed?: boolean }) => {
-        if (d.signed) setSigned(true)
-        else setData(d)
+        if (d.signed) {
+          setSigned(true)
+        } else {
+          setData(d)
+          setSigCount(d.existingSignatures?.length ?? 0)
+          setSigRequired(d.requiredSignatures ?? 1)
+        }
       })
       .catch(() => setError(true))
   }, [token])
 
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return
-    // On mobile use a taller canvas buffer so the drawing area is bigger
     if (window.innerWidth < 1024) canvas.height = 420
     const ctx = canvas.getContext('2d'); if (!ctx) return
     ctx.fillStyle = '#ffffff'
@@ -103,7 +104,7 @@ export default function FirmaClient({ token }: { token: string }) {
   const startDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     const canvas = canvasRef.current; if (!canvas) return
-    const ctx    = canvas.getContext('2d');  if (!ctx)    return
+    const ctx    = canvas.getContext('2d');  if (!ctx) return
     isDrawing.current = true
     const { x, y } = getXY(e, canvas)
     ctx.beginPath(); ctx.moveTo(x, y)
@@ -113,7 +114,7 @@ export default function FirmaClient({ token }: { token: string }) {
     e.preventDefault()
     if (!isDrawing.current) return
     const canvas = canvasRef.current; if (!canvas) return
-    const ctx    = canvas.getContext('2d');  if (!ctx)    return
+    const ctx    = canvas.getContext('2d');  if (!ctx) return
     const { x, y } = getXY(e, canvas)
     ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2.5
     ctx.lineCap = 'round'; ctx.lineJoin = 'round'
@@ -125,7 +126,7 @@ export default function FirmaClient({ token }: { token: string }) {
 
   const clearCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return
-    const ctx    = canvas.getContext('2d');  if (!ctx)    return
+    const ctx    = canvas.getContext('2d');  if (!ctx) return
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
     setHasSigned(false)
   }
@@ -134,18 +135,46 @@ export default function FirmaClient({ token }: { token: string }) {
     if (!data) return
     setLoading(true); setDone(false)
 
-    // Safari iOS blocks window.open() after any await — must open before async work
+    // Safari iOS bloquea window.open() después de cualquier await
     const pdfWindow = window.open('', '_blank')
 
     try {
       const firmaDataUrl = canvasRef.current?.toDataURL('image/png') ?? ''
+      const newSignature: SignatureData = {
+        titularNombre: nombre,
+        titularDNI:    dni,
+        titularTel:    celular,
+        titularEmail:  email,
+        firmaDataUrl,
+      }
 
+      // 1. Guardar firma → obtener todas las firmas acumuladas
+      const patchRes = await fetch(`/api/autorizaciones/pending/${token}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(newSignature),
+      })
+      const patchData = await patchRes.json() as {
+        ok: boolean
+        isComplete: boolean
+        signaturesCount: number
+        requiredSignatures: number
+        signatures: SignatureData[]
+      }
+
+      const allSignatures: SignatureData[] = patchData.signatures?.length
+        ? patchData.signatures
+        : [...(data.existingSignatures ?? []), newSignature]
+
+      // 2. Generar PDF con TODAS las firmas recolectadas hasta ahora
       const docData: AutorizacionData = {
         ...data,
-        titularNombre:  nombre,
-        titularDNI:     dni,
-        titularTel:     celular,
-        titularEmail:   email,
+        signatures:    allSignatures,
+        // Campos individuales por retrocompatibilidad (última firma)
+        titularNombre: nombre,
+        titularDNI:    dni,
+        titularTel:    celular,
+        titularEmail:  email,
         firmaDataUrl,
       }
 
@@ -161,19 +190,14 @@ export default function FirmaClient({ token }: { token: string }) {
       if (pdfWindow) {
         pdfWindow.location.href = url
       } else {
-        // Fallback si el popup fue bloqueado (Chrome Desktop con bloqueador)
         const a = document.createElement('a')
         a.href = url
         a.download = `Autorización de Venta - ${data.inmuebleDir || 'propiedad'}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        document.body.appendChild(a); a.click(); document.body.removeChild(a)
       }
-
-      // Revocar después de que el navegador tenga tiempo de cargar el blob
       setTimeout(() => URL.revokeObjectURL(url), 15000)
 
-      // Subir PDF a Google Drive (fire-and-forget, no bloquea el flujo)
+      // 3. Subir PDF a Drive (fire-and-forget)
       const driveForm = new FormData()
       driveForm.append('pdf', blob, `Autorizacion venta ${data.inmuebleDir} - ${data.inmuebleCiudad}.pdf`)
       driveForm.append('address', data.inmuebleDir)
@@ -182,20 +206,30 @@ export default function FirmaClient({ token }: { token: string }) {
       fetch('/api/autorizaciones/firmar-drive', { method: 'POST', body: driveForm })
         .catch(err => console.error('Drive upload error:', err))
 
-      const saveRes = await fetch('/api/autorizaciones/firmar', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, titularNombre: nombre, titularDNI: dni, titularTel: celular, titularEmail: email, firmaDataUrl }),
-      }).catch(err => { console.error('Error al guardar autorización:', err); return null })
-      if (!saveRes?.ok) {
-        console.error('El servidor no guardó la autorización. Status:', saveRes?.status)
+      // 4. Guardar en autorizaciones solo cuando están TODAS las firmas
+      if (patchData.isComplete) {
+        const nombresCompletos = allSignatures.map(s => s.titularNombre).join(' / ')
+        fetch('/api/autorizaciones/firmar', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...data,
+            titularNombre: nombresCompletos,
+            titularDNI:    allSignatures.map(s => s.titularDNI).join(' / '),
+            titularTel:    allSignatures.map(s => s.titularTel).join(' / '),
+            titularEmail:  allSignatures.map(s => s.titularEmail).join(' / '),
+            firmaDataUrl,
+          }),
+        }).catch(err => console.error('Error al guardar autorización:', err))
       }
 
-      // Mark this link as already signed so it can't be used again
-      await fetch(`/api/autorizaciones/pending/${token}`, { method: 'PATCH' }).catch(() => {})
-
-      setSigned(true)
+      setIsComplete(patchData.isComplete)
+      setSigCount(patchData.signaturesCount)
+      setSigRequired(patchData.requiredSignatures)
       setDone(true)
+
+      if (patchData.isComplete) setSigned(true)
+
     } catch (err) {
       if (pdfWindow && !pdfWindow.closed) pdfWindow.close()
       console.error(err)
@@ -205,6 +239,9 @@ export default function FirmaClient({ token }: { token: string }) {
     }
   }
 
+  // ── Pantallas de estado ─────────────────────────────────────────────────
+
+  // Firmado completamente (todas las firmas recibidas)
   if (signed && !done) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">
@@ -213,8 +250,10 @@ export default function FirmaClient({ token }: { token: string }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-gray-800 font-bold text-lg mb-2">Ya firmaste este documento</p>
-        <p className="text-gray-400 text-sm">Esta autorización ya fue firmada. Si tenés alguna consulta, contactá a tu asesor de Funes Inmobiliaria.</p>
+        <p className="text-gray-800 font-bold text-lg mb-2">Autorización completamente firmada</p>
+        <p className="text-gray-400 text-sm">
+          Esta autorización ya fue firmada por todos los vendedores. Si tenés alguna consulta, contactá a tu asesor de Funes Inmobiliaria.
+        </p>
       </div>
     </div>
   )
@@ -228,6 +267,44 @@ export default function FirmaClient({ token }: { token: string }) {
     </div>
   )
 
+  // Recién terminó de firmar — pantalla de éxito
+  if (done) {
+    const remaining = sigRequired - sigCount
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          {isComplete ? (
+            <>
+              <p className="text-gray-800 font-bold text-lg mb-2">¡Autorización completamente firmada!</p>
+              <p className="text-gray-500 text-sm">
+                Los {sigCount} vendedores firmaron la autorización. El documento fue descargado y notificado al asesor.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-800 font-bold text-lg mb-2">✓ Tu firma fue registrada</p>
+              <p className="text-gray-500 text-sm mb-4">
+                Firma {sigCount} de {sigRequired} recibida. Falta{remaining > 1 ? 'n' : ''}{' '}
+                <strong>{remaining} vendedor{remaining > 1 ? 'es' : ''}</strong> por firmar.
+              </p>
+              <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-left">
+                <p className="text-amber-700 text-xs font-semibold mb-1">Siguiente paso</p>
+                <p className="text-amber-600 text-xs">
+                  Enviá este mismo link al siguiente vendedor para que pueda firmar la autorización.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (!data) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="w-7 h-7 border-2 border-brand-green border-t-transparent rounded-full animate-spin" />
@@ -239,10 +316,12 @@ export default function FirmaClient({ token }: { token: string }) {
   const mes = (['enero','febrero','marzo','abril','mayo','junio',
                 'julio','agosto','septiembre','octubre','noviembre','diciembre'])[parseInt(fecha.split('/')[1] ?? '1') - 1] ?? ''
   const año = fecha.split('/')[2] ?? ''
-  const periodoNum = parseInt(periodo || '180') || 180
+  const periodoNum  = parseInt(periodo || '180') || 180
   const periodoText = `${daysToWords(periodoNum)} (${periodoNum}) días`
 
-  const isReady = nombre.trim() && dni.trim() && celular.trim() && email.trim() && hasSigned
+  const isReady     = nombre.trim() && dni.trim() && celular.trim() && email.trim() && hasSigned
+  const isMultiSig  = sigRequired > 1
+  const currentSig  = sigCount + 1  // número de esta firma
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -264,7 +343,36 @@ export default function FirmaClient({ token }: { token: string }) {
           </p>
         </div>
 
-        {/* Documento — texto exacto */}
+        {/* Badge de progreso para multi-firma */}
+        {isMultiSig && (
+          <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm">
+            <div className="flex gap-1.5">
+              {Array.from({ length: sigRequired }, (_, i) => (
+                <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  i < sigCount
+                    ? 'bg-brand-green text-white'
+                    : i === sigCount
+                      ? 'bg-brand-green/20 text-brand-green ring-2 ring-brand-green ring-offset-1'
+                      : 'bg-gray-100 text-gray-400'
+                }`}>
+                  {i < sigCount ? '✓' : i + 1}
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">
+                Firma {currentSig} de {sigRequired}
+              </p>
+              {sigCount > 0 && (
+                <p className="text-xs text-gray-400">
+                  {sigCount} vendedor{sigCount > 1 ? 'es' : ''} ya firm{sigCount > 1 ? 'aron' : 'ó'}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Documento — texto */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="bg-brand-green px-5 py-3 rounded-t-2xl flex items-center justify-between">
             <h2 className="text-white text-sm font-bold uppercase tracking-wide">Autorización de Venta</h2>
@@ -276,8 +384,7 @@ export default function FirmaClient({ token }: { token: string }) {
               Por la presente autorizo{exclusividad && <strong> en exclusividad</strong>} a{' '}
               <strong>FUNES INMOBILIARIA</strong> representada por C.I Fabio H. Juaneu Mat. 0298 COCIR
               y/o C.I Máximo F. Juaneu Mat. 2708 COCIR, con oficinas en calle Córdoba 2115 (s/ruta 9)
-              Funes; para que gestionen la
-              venta, por mi cuenta y orden, de la propiedad ubicada en{' '}
+              Funes; para que gestionen la venta, por mi cuenta y orden, de la propiedad ubicada en{' '}
               <strong>{inmuebleDir}</strong> de la ciudad de{' '}
               <strong>{inmuebleCiudad}</strong>, Pcia de <strong>{provincia}</strong>
               {partida ? <>, denominada con partida inmobiliaria N° <strong>{partida}</strong></> : null}
@@ -341,7 +448,11 @@ export default function FirmaClient({ token }: { token: string }) {
         {/* Firma digital */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="bg-brand-green px-5 py-3 rounded-t-2xl flex items-center justify-between">
-            <h2 className="text-white text-sm font-bold uppercase tracking-wide">Firma digital <span className="text-white/60 font-normal normal-case">*</span></h2>
+            <h2 className="text-white text-sm font-bold uppercase tracking-wide">
+              Firma digital
+              {isMultiSig && <span className="text-white/70 font-normal normal-case ml-1">— Vendedor {currentSig}</span>}
+              <span className="text-white/60 font-normal normal-case ml-1">*</span>
+            </h2>
             {hasSigned && (
               <button onClick={clearCanvas}
                 className="text-white/80 hover:text-white text-xs font-semibold bg-white/15 hover:bg-white/25 px-3 py-1 rounded-lg transition">
@@ -366,7 +477,10 @@ export default function FirmaClient({ token }: { token: string }) {
         {/* Datos del vendedor */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
           <div className="bg-brand-green px-5 py-3 rounded-t-2xl">
-            <h2 className="text-white text-sm font-bold uppercase tracking-wide">Datos del vendedor</h2>
+            <h2 className="text-white text-sm font-bold uppercase tracking-wide">
+              Datos del vendedor
+              {isMultiSig && <span className="text-white/70 font-normal normal-case ml-1">— Vendedor {currentSig}</span>}
+            </h2>
           </div>
           <div className="p-5 space-y-4">
             <div className="flex flex-col gap-1">
@@ -385,7 +499,9 @@ export default function FirmaClient({ token }: { token: string }) {
                   placeholder="Ej: 30.123.456" className={inputCls} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Celular (TE) <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Celular (TE) <span className="text-red-400">*</span>
+                </label>
                 <input type="tel" value={celular} onChange={e => setCelular(e.target.value)}
                   placeholder="Ej: 341 555-1234" className={inputCls} />
               </div>
@@ -426,17 +542,10 @@ export default function FirmaClient({ token }: { token: string }) {
                   <path strokeLinecap="round" strokeLinejoin="round"
                     d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Firmar y descargar documento
+                {isMultiSig ? `Firmar como Vendedor ${currentSig} y descargar` : 'Firmar y descargar documento'}
               </>
             )}
           </button>
-
-          {done && (
-            <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
-              <p className="text-green-700 font-semibold text-sm">✓ Documento descargado correctamente</p>
-              <p className="text-green-600 text-xs mt-1">Guardá el PDF firmado en un lugar seguro. Tu asesor fue notificado.</p>
-            </div>
-          )}
 
           <p className="text-xs text-gray-400 text-center pt-2">
             Funes Inmobiliaria{agenteNombre ? ` — ${agenteNombre}` : ''}
