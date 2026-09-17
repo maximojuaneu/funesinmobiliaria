@@ -202,7 +202,7 @@ export default async function PropertyPage({ params }: Props) {
           </div>
 
           {/* Expensas — solo si tiene valor cargado en Tokko */}
-          {property.expenses && Number(property.expenses) > 0 && (
+          {Number(property.expenses) > 0 && (
             <p className="text-gray-600 leading-relaxed">
               <span className="font-semibold text-gray-800">Expensas:</span> $ {formatAmount(Number(property.expenses))}
             </p>
