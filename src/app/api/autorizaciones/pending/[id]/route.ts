@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 
 interface SignatureData {
   titularNombre: string
@@ -16,14 +16,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const result = await getDb().execute({
-      sql: 'SELECT data, signedAt FROM firma_pending WHERE id = ?',
-      args: [params.id],
-    })
-    const row = result.rows[0]
+    const { data: row } = await getSupabase()
+      .from('firma_pending')
+      .select('data, signedAt')
+      .eq('id', params.id)
+      .single()
+
     if (!row) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-    // Completamente firmado (todas las firmas recolectadas)
     if (row.signedAt) {
       return NextResponse.json({ signed: true, signedAt: row.signedAt })
     }
@@ -49,18 +49,19 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const current = await getDb().execute({
-      sql: 'SELECT data FROM firma_pending WHERE id = ?',
-      args: [params.id],
-    })
-    const row = current.rows[0]
+    const supabase = getSupabase()
+    const { data: row } = await supabase
+      .from('firma_pending')
+      .select('data')
+      .eq('id', params.id)
+      .single()
+
     if (!row) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     const parsedData = JSON.parse(row.data as string)
     const requiredSignatures = Math.max(1, Number(parsedData.cantidadVendedores) || 1)
     const signatures: SignatureData[] = [...(parsedData.signatures || [])]
 
-    // Agregar la nueva firma si viene en el body
     const body: Partial<SignatureData> = await req.json().catch(() => ({}))
     if (body.titularNombre) {
       signatures.push({
@@ -74,20 +75,14 @@ export async function PATCH(
     }
 
     parsedData.signatures = signatures
-    const isComplete   = signatures.length >= requiredSignatures
-    const newDataJson  = JSON.stringify(parsedData)
+    const isComplete  = signatures.length >= requiredSignatures
+    const newDataJson = JSON.stringify(parsedData)
 
-    if (isComplete) {
-      await getDb().execute({
-        sql: "UPDATE firma_pending SET data = ?, signedAt = datetime('now') WHERE id = ?",
-        args: [newDataJson, params.id],
-      })
-    } else {
-      await getDb().execute({
-        sql: 'UPDATE firma_pending SET data = ? WHERE id = ?',
-        args: [newDataJson, params.id],
-      })
-    }
+    const update = isComplete
+      ? { data: newDataJson, signedAt: new Date().toISOString() }
+      : { data: newDataJson }
+
+    await supabase.from('firma_pending').update(update).eq('id', params.id)
 
     return NextResponse.json({
       ok: true,

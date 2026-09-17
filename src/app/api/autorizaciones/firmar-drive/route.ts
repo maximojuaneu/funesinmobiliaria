@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 import { getAutorizacionesFolder, uploadToDrive } from '@/lib/gdrive'
 
 export async function POST(req: NextRequest) {
@@ -14,12 +14,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
     }
 
-    // Validate that the token corresponds to a real firma session
-    const result = await getDb().execute({
-      sql: 'SELECT id FROM firma_pending WHERE id = ?',
-      args: [token],
-    })
-    if (!result.rows[0]) {
+    const { data: row } = await getSupabase()
+      .from('firma_pending')
+      .select('id')
+      .eq('id', token)
+      .single()
+
+    if (!row) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 403 })
     }
 

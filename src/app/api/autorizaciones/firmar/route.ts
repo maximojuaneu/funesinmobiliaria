@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,23 +34,8 @@ export async function POST(req: NextRequest) {
       firmaDataUrl:   String(body.firmaDataUrl     ?? ''),
     }
 
-    const db = getDb()
-    await db.execute({
-      sql: `INSERT INTO autorizaciones
-        (id,agenteNombre,agenteEmail,agenteTel,inmuebleDir,inmuebleCiudad,
-         provincia,partida,precio,precioLetras,comision,vigencia,exclusividad,
-         fecha,titularNombre,titularDNI,titularTel,titularEmail,fechaFirma,
-         propiedadId,firmaDataUrl)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      args: [
-        record.id, record.agenteNombre, record.agenteEmail, record.agenteTel,
-        record.inmuebleDir, record.inmuebleCiudad, record.provincia, record.partida,
-        record.precio, record.precioLetras, record.comision, record.vigencia,
-        record.exclusividad, record.fecha, record.titularNombre, record.titularDNI,
-        record.titularTel, record.titularEmail, record.fechaFirma,
-        record.propiedadId, record.firmaDataUrl,
-      ],
-    })
+    const { error } = await getSupabase().from('autorizaciones').insert(record)
+    if (error) throw error
 
     return NextResponse.json({ ok: true, id: record.id })
   } catch (err) {

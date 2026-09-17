@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 
 function toAuth(row: Record<string, unknown>) {
   return { ...row, exclusividad: row.exclusividad === 1 }
@@ -17,13 +17,16 @@ export async function GET(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const db = getDb()
-  const result = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
-  const record = result.rows[0] as unknown as Record<string, unknown> | undefined
+  const { data: record } = await getSupabase()
+    .from('autorizaciones')
+    .select('*')
+    .eq('id', params.id)
+    .single()
+
   if (!record || !canAccess(session, String(record.agenteNombre))) {
     return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   }
-  return NextResponse.json(toAuth(record))
+  return NextResponse.json(toAuth(record as unknown as Record<string, unknown>))
 }
 
 export async function PATCH(
@@ -34,19 +37,26 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const body = await req.json()
-  const db = getDb()
-  const result = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
-  const record = result.rows[0] as unknown as Record<string, unknown> | undefined
+  const supabase = getSupabase()
+
+  const { data: record } = await supabase
+    .from('autorizaciones')
+    .select('agenteNombre')
+    .eq('id', params.id)
+    .single()
+
   if (!record || !canAccess(session, String(record.agenteNombre))) {
     return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   }
 
-  await db.execute({
-    sql: 'UPDATE autorizaciones SET propiedadId = ? WHERE id = ?',
-    args: [body.propiedadId ?? null, params.id],
-  })
-  const updated = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
-  return NextResponse.json(toAuth(updated.rows[0] as unknown as Record<string, unknown>))
+  const { data: updated } = await supabase
+    .from('autorizaciones')
+    .update({ propiedadId: body.propiedadId ?? null })
+    .eq('id', params.id)
+    .select('*')
+    .single()
+
+  return NextResponse.json(toAuth(updated as unknown as Record<string, unknown>))
 }
 
 export async function DELETE(
@@ -56,9 +66,13 @@ export async function DELETE(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const db = getDb()
-  const result = await db.execute({ sql: 'SELECT * FROM autorizaciones WHERE id = ?', args: [params.id] })
-  const record = result.rows[0] as unknown as Record<string, unknown> | undefined
+  const supabase = getSupabase()
+  const { data: record } = await supabase
+    .from('autorizaciones')
+    .select('agenteNombre, propiedadId')
+    .eq('id', params.id)
+    .single()
+
   if (!record || !canAccess(session, String(record.agenteNombre))) {
     return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   }
@@ -66,6 +80,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'No se puede eliminar una autorización asignada' }, { status: 400 })
   }
 
-  await db.execute({ sql: 'DELETE FROM autorizaciones WHERE id = ?', args: [params.id] })
+  await supabase.from('autorizaciones').delete().eq('id', params.id)
   return NextResponse.json({ ok: true })
 }

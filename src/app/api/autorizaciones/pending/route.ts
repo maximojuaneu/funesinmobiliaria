@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 
 /** POST { ...formData } — saves pending authorization and returns a short id */
 export async function POST(req: NextRequest) {
@@ -10,11 +10,11 @@ export async function POST(req: NextRequest) {
     }
 
     const id = crypto.randomUUID()
-    await getDb().execute({
-      sql: "INSERT INTO firma_pending (id, data, createdAt) VALUES (?, ?, datetime('now'))",
-      args: [id, JSON.stringify(body)],
-    })
+    const { error } = await getSupabase()
+      .from('firma_pending')
+      .insert({ id, data: JSON.stringify(body), createdAt: new Date().toISOString() })
 
+    if (error) throw error
     return NextResponse.json({ id })
   } catch (err) {
     console.error('[pending POST]', err)

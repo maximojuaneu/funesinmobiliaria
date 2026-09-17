@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 
 function toAuth(row: Record<string, unknown>) {
   return { ...row, exclusividad: row.exclusividad === 1 }
@@ -11,21 +11,18 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   try {
-    const db = getDb()
-    const result = session.role === 'admin'
-      ? await db.execute('SELECT * FROM autorizaciones ORDER BY rowid DESC')
-      : await db.execute({
-          sql: 'SELECT * FROM autorizaciones WHERE lower(agenteNombre) = lower(?) ORDER BY rowid DESC',
-          args: [session.name],
-        })
+    const supabase = getSupabase()
+    const query = supabase
+      .from('autorizaciones')
+      .select('id, agenteNombre, agenteEmail, agenteTel, inmuebleDir, inmuebleCiudad, provincia, partida, precio, precioLetras, comision, vigencia, exclusividad, fecha, titularNombre, titularDNI, titularTel, titularEmail, fechaFirma, propiedadId')
+      .order('id', { ascending: false })
 
-    const rows = result.rows as unknown as Record<string, unknown>[]
-    const list = rows.map(r => {
-      const auth = toAuth(r) as Record<string, unknown>
-      delete auth.firmaDataUrl
-      return auth
-    })
-    return NextResponse.json(list)
+    const { data, error } = session.role === 'admin'
+      ? await query
+      : await query.ilike('agenteNombre', session.name)
+
+    if (error) throw error
+    return NextResponse.json((data ?? []).map(r => toAuth(r as unknown as Record<string, unknown>)))
   } catch {
     return NextResponse.json([])
   }

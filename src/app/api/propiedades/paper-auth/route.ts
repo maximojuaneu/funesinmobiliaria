@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { getDb } from '@/lib/db'
+import { getSupabase } from '@/lib/supabase-server'
 
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const result = await getDb().execute('SELECT propId FROM paper_auth')
-  return NextResponse.json(result.rows.map(r => r.propId))
+  const { data } = await getSupabase().from('paper_auth').select('propId')
+  return NextResponse.json((data ?? []).map(r => r.propId))
 }
 
 export async function POST(req: NextRequest) {
@@ -19,10 +19,11 @@ export async function POST(req: NextRequest) {
     const propId = body?.propId
     if (!propId) return NextResponse.json({ error: 'propId requerido' }, { status: 400 })
 
-    await getDb().execute({
-      sql: "INSERT OR REPLACE INTO paper_auth (propId, marcadaEn) VALUES (?, datetime('now'))",
-      args: [String(propId)],
-    })
+    const { error } = await getSupabase()
+      .from('paper_auth')
+      .upsert({ propId: String(propId), marcadaEn: new Date().toISOString() })
+
+    if (error) throw error
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[paper-auth POST]', err)
@@ -39,7 +40,7 @@ export async function DELETE(req: NextRequest) {
     const propId = body?.propId
     if (!propId) return NextResponse.json({ error: 'propId requerido' }, { status: 400 })
 
-    await getDb().execute({ sql: 'DELETE FROM paper_auth WHERE propId = ?', args: [String(propId)] })
+    await getSupabase().from('paper_auth').delete().eq('propId', String(propId))
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[paper-auth DELETE]', err)
