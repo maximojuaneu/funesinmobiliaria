@@ -48,7 +48,7 @@ function formatDescription(text: string): string {
     .replace(/^(<br\s*\/?>[\s]*)*/i, '')
 }
 
-interface Props { params: { id: string } }
+interface Props { params: { id: string }; searchParams?: { hideAgent?: string } }
 
 // Format number: round and show only if > 0
 const m2 = (val: any) => {
@@ -77,7 +77,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function PropertyPage({ params }: Props) {
+export default async function PropertyPage({ params, searchParams }: Props) {
+  const hideAgent = searchParams?.hideAgent === "1";
   let property: any = null
   try { property = await getPropertyById(params.id) } catch {}
 
@@ -287,7 +288,7 @@ export default async function PropertyPage({ params }: Props) {
           </div>
 
           {/* Agent card */}
-          {agent && (
+          {agent && !hideAgent && (
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Agente responsable</p>
               <div className="flex items-center gap-3">
