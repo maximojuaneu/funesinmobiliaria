@@ -37,7 +37,7 @@ export default function PropiedadesClient() {
   const [loading,        setLoading]        = useState(true)
   const [isAdmin,        setIsAdmin]        = useState(false)
 
-  const [assignModal,   setAssignModal]   = useState<{ propId: string } | null>(null)
+  const [assignModal,   setAssignModal]   = useState<{ propId: string; authId?: string } | null>(null)
   const [assignSearch,  setAssignSearch]  = useState('')
   const [search,        setSearch]        = useState('')
   const [authFilter,    setAuthFilter]    = useState<'all' | 'signed' | 'unsigned'>('all')
@@ -269,7 +269,7 @@ export default function PropiedadesClient() {
                     PDF
                   </button>
                   {propiedades.length > 0 && (
-                    <button onClick={() => setAssignModal({ propId: '' })}
+                    <button onClick={() => setAssignModal({ propId: '', authId: a.id })}
                       className="text-xs bg-brand-green text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-brand-hover transition">
                       Asignar a propiedad
                     </button>
@@ -464,7 +464,10 @@ export default function PropiedadesClient() {
                   autoFocus
                 />
                 <div className="space-y-2 max-h-56 overflow-y-auto">
-                  {unlinkedAuths.map(auth => {
+                  {(assignModal.authId
+                    ? unlinkedAuths.filter(a => a.id === assignModal.authId)
+                    : unlinkedAuths
+                  ).map(auth => {
                     const filtered = propiedades.filter(p =>
                       p.address.toLowerCase().includes(assignSearch.toLowerCase())
                     )
