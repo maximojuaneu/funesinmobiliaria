@@ -158,7 +158,7 @@ export default function Navbar() {
 
           {/* Acceso interno */}
           <a
-            href="/login"
+            href="https://app.funesinmobiliaria.com.ar/login"
             target="_blank"
             rel="noopener noreferrer"
             className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
@@ -231,7 +231,7 @@ export default function Navbar() {
             </Link>
           ))}
           <Link href="/tasar-mi-propiedad" onClick={() => setMenuOpen(false)} className="btn-primary text-center">Tasación</Link>
-          <a href="/login" target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className="text-brand-green font-semibold">Acceso interno</a>
+          <a href="https://app.funesinmobiliaria.com.ar/login" target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className="text-brand-green font-semibold">Acceso interno</a>
         </div>
       )}
     </header>

@@ -11,14 +11,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: '/dashboard/:path*',
-        headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
-      },
-    ]
-  },
 }
 
 export default nextConfig
