@@ -168,13 +168,13 @@ export default function PropertiesPageContent({ properties, operationType, initi
     const result: { globalCi: number; cards: TokkoProperty[] }[] = []
     let offset = 0
     let ci = 0
-    while (offset < regularPool.length) {
+    while (offset < regularPool.length || ci < totalFeatChunks) {
       const featN = ci < totalFeatChunks
         ? Math.min(FEAT_PER_CHUNK, featuredPool.length - ci * FEAT_PER_CHUNK)
         : 0
       const size = (featN === 0 || featN === 3) ? CHUNK_SIZE : 9 - featN
       const cards = regularPool.slice(offset, offset + size)
-      if (cards.length === 0) break
+      if (cards.length === 0 && featN === 0) break
       result.push({ globalCi: ci, cards })
       offset += size
       ci++
