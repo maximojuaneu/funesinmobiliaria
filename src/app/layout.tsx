@@ -33,14 +33,45 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Funes Inmobiliaria',
+    images: ['/banner-hero.jpg'],
   },
   robots: { index: true, follow: true },
+}
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://funesinmobiliaria.com.ar'
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'RealEstateAgent',
+  name: 'Funes Inmobiliaria',
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  image: `${SITE_URL}/banner-hero.jpg`,
+  telephone: '+5493414932522',
+  email: 'info@funesinmobiliaria.com.ar',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Córdoba 2115 (Ruta 9)',
+    addressLocality: 'Funes',
+    addressRegion: 'Santa Fe',
+    addressCountry: 'AR',
+  },
+  openingHours: ['Mo-Fr 09:00-17:00', 'Sa 09:00-13:00'],
+  sameAs: [
+    'https://www.instagram.com/funesinmobiliaria/',
+    'https://www.facebook.com/profile.php?id=100064200451795',
+    'https://www.tiktok.com/@funesinmobiliaria',
+  ],
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={`${montserrat.variable} ${eurostile.variable}`}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {children}
         <Analytics />
       </body>

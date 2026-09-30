@@ -70,6 +70,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: p.publication_title || p.address,
       description: p.description?.slice(0, 160),
+      alternates: { canonical: `/propiedades/${params.id}` },
       openGraph: { images: p.photos?.[0]?.image ? [p.photos[0].image] : [] },
     }
   } catch {
@@ -133,8 +134,42 @@ export default async function PropertyPage({ params, searchParams }: Props) {
   const agentPhone = agent?.cellphone || agent?.phone || ''
   const agentWa    = agentPhone ? waPhone(agentPhone) : null
 
+  // Structured data (schema.org) for search engines
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://funesinmobiliaria.com.ar'
+  const SCHEMA_TYPE_BY_NAME: Record<string, string> = { House: 'House', Apartment: 'Apartment' }
+  const schemaType = SCHEMA_TYPE_BY_NAME[property.type?.name] || 'Accommodation'
+  const propertyJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': schemaType,
+    name: property.publication_title || property.address,
+    description: property.description?.slice(0, 500),
+    url: `${SITE_URL}/propiedades/${property.id}`,
+    image: photos.map((p: any) => p.image).filter(Boolean),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: property.fake_address || property.address,
+      addressLocality: property.location?.name,
+      addressRegion: property.location?.state?.name || 'Santa Fe',
+      addressCountry: 'AR',
+    },
+    ...(property.suite_amount > 0 && { numberOfRooms: property.suite_amount }),
+    ...(property.bathroom_amount > 0 && { numberOfBathroomsTotal: property.bathroom_amount }),
+    ...(supTotal && { floorSize: { '@type': 'QuantitativeValue', value: supTotal, unitCode: 'MTK' } }),
+    offers: allOperations.map(op => ({
+      '@type': 'Offer',
+      price: op.amount,
+      priceCurrency: op.currency,
+      availability: 'https://schema.org/InStock',
+      businessFunction: op.type === 'Sale' ? 'http://purl.org/goodrelations/v1#Sell' : 'http://purl.org/goodrelations/v1#LeaseOut',
+    })),
+  }
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(propertyJsonLd) }}
+      />
       {/* Photo gallery */}
       <section className="pt-20">
         <div className="max-w-7xl mx-auto px-6 mt-6">
