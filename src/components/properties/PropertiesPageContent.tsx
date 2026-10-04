@@ -40,7 +40,7 @@ function Pagination({ page, totalPages, onChange }: { page: number; totalPages: 
   const end   = Math.min(totalPages, page + delta)
   const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i)
   const btn = (label: React.ReactNode, target: number, active = false, disabled = false) => (
-    <button key={String(label)} onClick={() => !disabled && onChange(target)} disabled={disabled}
+    <button key={`${typeof label === 'object' ? 'arrow' : 'n'}-${target}`} onClick={() => !disabled && onChange(target)} disabled={disabled}
       className={`w-10 h-10 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center ${active ? 'bg-brand-green text-white shadow-sm' : disabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}>
       {label}
     </button>

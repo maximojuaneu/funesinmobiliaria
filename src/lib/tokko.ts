@@ -28,21 +28,41 @@ async function tokkoFetch<T>(path: string, params: Record<string, string | numbe
   return res.json()
 }
 
+// Follows Tokko's offset pagination until every object is fetched, so a catalog
+// larger than one page is never silently truncated.
+async function tokkoFetchAll<T extends { id: number }>(
+  path: string,
+  params: Record<string, string | number> = {},
+  pageSize = 200,
+): Promise<T[]> {
+  const MAX_PAGES = 25
+  const byId = new Map<number, T>()
+  let offset = 0
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const data = await tokkoFetch<TokkoListResponse<T>>(path, { ...params, limit: pageSize, offset })
+    const objects = data.objects ?? []
+    for (const o of objects) byId.set(o.id, o)
+    offset += objects.length
+    if (objects.length === 0 || offset >= data.meta.total_count) break
+  }
+  return Array.from(byId.values())
+}
+
 // ── In-memory cache for the full property list (the most-called endpoint) ──
 // TTL: 5 minutes. Shared across requests in the same Node.js process.
 const PROPERTY_CACHE_TTL = 5 * 60 * 1000
 let propertyCacheData: TokkoProperty[] | null = null
 let propertyCacheTs   = 0
 
-// Fetch all properties with optional server-side limit
-async function fetchAllProperties(limit = 200): Promise<TokkoProperty[]> {
+// Fetch every property, paginating past Tokko's per-page limit
+async function fetchAllProperties(pageSize = 200): Promise<TokkoProperty[]> {
   if (propertyCacheData && Date.now() - propertyCacheTs < PROPERTY_CACHE_TTL) {
     return propertyCacheData
   }
-  const data = await tokkoFetch<TokkoListResponse<TokkoProperty>>('/property/', { limit })
-  propertyCacheData = data.objects
+  const objects = await tokkoFetchAll<TokkoProperty>('/property/', {}, pageSize)
+  propertyCacheData = objects
   propertyCacheTs   = Date.now()
-  return data.objects
+  return objects
 }
 
 export async function getProperties(filters: PropertyFilters = {}): Promise<{ objects: TokkoProperty[]; count: number }> {
@@ -160,10 +180,9 @@ export async function getPropertyById(id: number | string): Promise<TokkoPropert
   if (directReserved?.id) return normalizeProperty(directReserved as TokkoProperty)
 
   // 3. Last resort: search in the reserved properties list
-  const reservedList = await tokkoFetch<TokkoListResponse<TokkoProperty>>('/property/', {
-    limit: 500, status: 2,
-  }).catch(() => ({ objects: [] as TokkoProperty[] }))
-  const found = reservedList.objects?.find(p => String(p.id) === String(id))
+  const reservedList = await tokkoFetchAll<TokkoProperty>('/property/', { status: 2 })
+    .catch(() => [] as TokkoProperty[])
+  const found = reservedList.find(p => String(p.id) === String(id))
   if (found) return normalizeProperty(found)
 
   throw new Error(`Property ${id} not found`)
@@ -343,12 +362,12 @@ export async function getClosedOperations(): Promise<ClosedOperation[]> {
 
   // Fetch status=2 (RESERVADA) and status=3 (NO DISPONIBLE) in parallel
   const [res2, res3] = await Promise.allSettled([
-    tokkoFetch<TokkoListResponse<TokkoProperty>>('/property/', { limit: 200, status: 2 }),
-    tokkoFetch<TokkoListResponse<TokkoProperty>>('/property/', { limit: 200, status: 3 }),
+    tokkoFetchAll<TokkoProperty>('/property/', { status: 2 }),
+    tokkoFetchAll<TokkoProperty>('/property/', { status: 3 }),
   ])
 
-  const reserved     = res2.status === 'fulfilled' ? (res2.value.objects ?? []) : []
-  const notAvailable = res3.status === 'fulfilled' ? (res3.value.objects ?? []) : []
+  const reserved     = res2.status === 'fulfilled' ? res2.value : []
+  const notAvailable = res3.status === 'fulfilled' ? res3.value : []
 
   const all: Array<[TokkoProperty, 'RESERVADA' | 'NO DISPONIBLE']> = [
     ...reserved.map(p => [p, 'RESERVADA'] as [TokkoProperty, 'RESERVADA']),
