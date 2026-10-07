@@ -100,7 +100,7 @@ export default async function NosotrosPage() {
       <div className="relative w-full" style={{ height: '100vh' }}>
         {/* Desktop */}
         <Image
-          src="/nosotros-hero.png"
+          src="/nosotros-hero.jpg"
           alt="Funes Inmobiliaria"
           fill
           priority
@@ -110,7 +110,7 @@ export default async function NosotrosPage() {
         />
         {/* Mobile */}
         <Image
-          src="/nosotros-hero-mobile.png"
+          src="/nosotros-hero-mobile.jpg"
           alt="Funes Inmobiliaria"
           fill
           priority
@@ -156,7 +156,7 @@ export default async function NosotrosPage() {
           <div className="grid grid-cols-2 gap-3 self-start">
             <div className="relative w-full rounded-xl overflow-hidden shadow-sm" style={{ aspectRatio: '3/4' }}>
               <Image
-                src="/nosotros-noche.png"
+                src="/nosotros-noche.jpg"
                 alt="Funes Inmobiliaria — fachada nocturna"
                 fill
                 className="object-cover"
@@ -166,7 +166,7 @@ export default async function NosotrosPage() {
             </div>
             <div className="relative w-full rounded-xl overflow-hidden shadow-sm mt-8" style={{ aspectRatio: '3/4' }}>
               <Image
-                src="/nosotros-interior.png"
+                src="/nosotros-interior.jpg"
                 alt="Funes Inmobiliaria — interior"
                 fill
                 className="object-cover"

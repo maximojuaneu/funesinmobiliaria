@@ -7,6 +7,7 @@ import type {
   PropertyFilters,
 } from '@/types/tokko'
 import { OPERATION_ID } from '@/types/tokko'
+import { usarCopia, leerPropiedadesCopia, leerPropiedadCopia, leerEmprendimientosCopia, leerEmprendimientoCopia } from '@/lib/copia-tokko'
 
 // Normalize string: lowercase + remove accents (á→a, é→e, etc.)
 const normalize = (s: string) =>
@@ -59,7 +60,9 @@ async function fetchAllProperties(pageSize = 200): Promise<TokkoProperty[]> {
   if (propertyCacheData && Date.now() - propertyCacheTs < PROPERTY_CACHE_TTL) {
     return propertyCacheData
   }
-  const objects = await tokkoFetchAll<TokkoProperty>('/property/', {}, pageSize)
+  // Con PROPIEDADES_FUENTE=copia se lee la copia del CRM; si no está al día, se consulta Tokko como siempre.
+  const objects = (usarCopia() ? await leerPropiedadesCopia() : null)
+    ?? await tokkoFetchAll<TokkoProperty>('/property/', {}, pageSize)
   propertyCacheData = objects
   propertyCacheTs   = Date.now()
   return objects
@@ -175,11 +178,17 @@ export async function getPropertyById(id: number | string): Promise<TokkoPropert
   const direct = await tokkoFetch<any>(`/property/${id}/`, { lang: 'es_ar' }).catch(() => null)
   if (direct?.id) return normalizeProperty(direct as TokkoProperty)
 
-  // 2. Try direct lookup with status=2 (reserved) — works on some Tokko versions
+  // 2. Si Tokko no responde (o no la entrega), una propiedad activa se toma de la copia (si está activada)
+  if (usarCopia()) {
+    const copia = await leerPropiedadCopia(id)
+    if (copia?.id) return normalizeProperty(copia)
+  }
+
+  // 3. Try direct lookup with status=2 (reserved) — works on some Tokko versions
   const directReserved = await tokkoFetch<any>(`/property/${id}/`, { lang: 'es_ar', status: 2 }).catch(() => null)
   if (directReserved?.id) return normalizeProperty(directReserved as TokkoProperty)
 
-  // 3. Last resort: search in the reserved properties list
+  // 4. Last resort: search in the reserved properties list
   const reservedList = await tokkoFetchAll<TokkoProperty>('/property/', { status: 2 })
     .catch(() => [] as TokkoProperty[])
   const found = reservedList.find(p => String(p.id) === String(id))
@@ -198,13 +207,18 @@ let devCacheTs = 0
 
 export async function getDevelopments(): Promise<TokkoListResponse<TokkoDevelopment>> {
   if (devCacheData && Date.now() - devCacheTs < PROPERTY_CACHE_TTL) return devCacheData
-  const data = await tokkoFetch<TokkoListResponse<TokkoDevelopment>>('/development/', { limit: 50, lang: 'es_AR' })
+  const data = (usarCopia() ? await leerEmprendimientosCopia() : null)
+    ?? await tokkoFetch<TokkoListResponse<TokkoDevelopment>>('/development/', { limit: 50, lang: 'es_AR' })
   devCacheData = data
   devCacheTs   = Date.now()
   return data
 }
 
 export async function getDevelopmentById(id: number | string): Promise<TokkoDevelopment> {
+  if (usarCopia()) {
+    const copia = await leerEmprendimientoCopia(id)
+    if (copia) return copia
+  }
   return tokkoFetch<TokkoDevelopment>(`/development/${id}/`, { lang: 'es_AR' })
 }
 
@@ -340,136 +354,4 @@ export async function getAgentById(id: number): Promise<TokkoAgent | null> {
   } catch {
     return null
   }
-}
-
-export interface ClosedOperation {
-  id: number
-  address: string
-  lat: number
-  lng: number
-  date: string           // created_at de la propiedad (fecha de publicación original)
-  type: string           // tipo de propiedad
-  price: number          // precio de publicación
-  currency: string       // USD | ARS
-  agentName: string      // productor asignado
-  photoUrl: string       // foto de portada
-  status: 'RESERVADA' | 'NO DISPONIBLE'
-  operationType: 'Sale' | 'Rent' | 'TempRent' | 'unknown'
-}
-
-export async function getClosedOperations(): Promise<ClosedOperation[]> {
-  const SINCE = '2025-01-01'
-
-  // Fetch status=2 (RESERVADA) and status=3 (NO DISPONIBLE) in parallel
-  const [res2, res3] = await Promise.allSettled([
-    tokkoFetchAll<TokkoProperty>('/property/', { status: 2 }),
-    tokkoFetchAll<TokkoProperty>('/property/', { status: 3 }),
-  ])
-
-  const reserved     = res2.status === 'fulfilled' ? res2.value : []
-  const notAvailable = res3.status === 'fulfilled' ? res3.value : []
-
-  const all: Array<[TokkoProperty, 'RESERVADA' | 'NO DISPONIBLE']> = [
-    ...reserved.map(p => [p, 'RESERVADA'] as [TokkoProperty, 'RESERVADA']),
-    ...notAvailable.map(p => [p, 'NO DISPONIBLE'] as [TokkoProperty, 'NO DISPONIBLE']),
-  ]
-
-  const results: ClosedOperation[] = []
-
-  for (const [p, status] of all) {
-    // Must have coordinates
-    if (!p.geo_lat || !p.geo_long) continue
-    const lat = parseFloat(p.geo_lat)
-    const lng = parseFloat(p.geo_long)
-    if (isNaN(lat) || isNaN(lng)) continue
-
-    // Date filter: use created_at if available, otherwise include it
-    const dateStr = p.created_at ?? p.deleted_at ?? ''
-    if (dateStr && dateStr < SINCE) continue
-
-    const op = p.operations?.[0]
-    const priceObj = op?.prices?.[0]
-
-    // Determine operation type
-    const rawOpType = op?.operation_type as string | undefined
-    let operationType: ClosedOperation['operationType'] = 'unknown'
-    if (rawOpType === 'Sale'    || rawOpType === 'Venta')              operationType = 'Sale'
-    else if (rawOpType === 'Rent'    || rawOpType === 'Alquiler')      operationType = 'Rent'
-    else if (rawOpType === 'TempRent'|| rawOpType === 'Alquiler Temp') operationType = 'TempRent'
-    else if (op?.operation_id === 1)  operationType = 'Sale'
-    else if (op?.operation_id === 2)  operationType = 'Rent'
-    else if (op?.operation_id === 3)  operationType = 'TempRent'
-
-    results.push({
-      id:            p.id,
-      address:       p.fake_address || p.address || 'Sin dirección',
-      lat,
-      lng,
-      date:          dateStr.slice(0, 10),  // YYYY-MM-DD
-      type:          p.type?.name ?? '—',
-      price:         priceObj?.price ?? 0,
-      currency:      priceObj?.currency ?? 'USD',
-      agentName:     p.producer?.name ?? '—',
-      photoUrl:      getMainPhoto(p),
-      status,
-      operationType,
-    })
-  }
-
-  // Sort newest first
-  return results.sort((a, b) => b.date.localeCompare(a.date))
-}
-
-export interface ContactStats {
-  total: number
-  byOrigin: Record<string, number>   // e.g. { Zonaprop: 18, Argenprop: 32 }
-  byOperation: Record<string, number> // e.g. { Venta: 30, Alquiler: 28 }
-}
-
-// Fetch all contacts for a date range and aggregate by portal origin + operation type
-// agentId: if provided, filter to only that agent's contacts
-export async function getContactStats(
-  startDate: string,    // YYYY-MM-DD
-  endDate:   string,    // YYYY-MM-DD
-  agentId?:  number,
-): Promise<ContactStats> {
-  const byOrigin: Record<string, number>    = {}
-  const byOperation: Record<string, number> = {}
-  let total = 0
-  let offset = 0
-
-  while (true) {
-    const params: Record<string, string | number> = {
-      limit:           50,   // Tokko hard-caps at 50; requesting more is silently ignored
-      offset,
-      ordering:        '-id',
-      created_at__gte: startDate,
-      created_at__lte: `${endDate}T23:59:59`,
-    }
-    if (agentId) params.agent = agentId
-
-    const data = await tokkoFetch<{ meta: { total_count: number }; objects: any[] }>(
-      '/contact/', params
-    )
-
-    for (const c of data.objects) {
-      total++
-      let origin: string | null = null
-      for (const t of c.tags ?? []) {
-        if (t.group_name === 'Origen de contacto') {
-          origin = t.name as string
-        } else if (t.name === 'Venta' || t.name === 'Alquiler' || t.name === 'Alquiler Temporal') {
-          byOperation[t.name] = (byOperation[t.name] ?? 0) + 1
-        }
-      }
-      byOrigin[origin ?? 'Sin origen'] = (byOrigin[origin ?? 'Sin origen'] ?? 0) + 1
-    }
-
-    // Advance by actual page size to handle the API's real cap correctly
-    const fetched = data.objects.length
-    if (fetched === 0 || offset + fetched >= data.meta.total_count) break
-    offset += fetched
-  }
-
-  return { total, byOrigin, byOperation }
 }

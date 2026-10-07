@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getPropertyById, getOperationPrice, hasCustomAvatar, translateMonth, formatAmount } from '@/lib/tokko'
+import { usarCopia, listadoDePropiedadNoActiva } from '@/lib/copia-tokko'
 import PhotoGallery from '@/components/properties/PhotoGallery'
 import ShareButton from '@/components/properties/ShareButton'
 import ContactTracker from '@/components/properties/ContactTracker'
@@ -84,6 +86,11 @@ export default async function PropertyPage({ params, searchParams }: Props) {
   try { property = await getPropertyById(params.id) } catch {}
 
   if (!property) {
+    // Un link viejo a una propiedad que ya se vendió (o dejó de estar activa) lleva al listado en vez de mostrar un error
+    if (usarCopia()) {
+      const destino = await listadoDePropiedadNoActiva(params.id)
+      if (destino) redirect(destino)
+    }
     return (
       <div className="page-hero">
         <div className="max-w-4xl mx-auto px-6 text-center py-20">

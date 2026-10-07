@@ -1,14 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-const IMAGES = ['/hero-banner.png', '/hero-banner-2.png']
+const IMAGES = ['/hero-banner.jpg', '/hero-banner-2.jpg']
 const STORAGE_KEY = 'hero_last_index'
 
 export default function HeroVideo() {
   const [image, setImage] = useState<string | null>(null)
+  const yaElegida = useRef(false)
 
   useEffect(() => {
+    // En desarrollo React ejecuta el efecto dos veces; sin esta guarda la alternancia avanzaría dos pasos y mostraría siempre la misma foto.
+    if (yaElegida.current) return
+    yaElegida.current = true
     const stored = localStorage.getItem(STORAGE_KEY)
     const next = stored === null
       ? Math.round(Math.random())
