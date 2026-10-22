@@ -10,6 +10,8 @@ import { formatAmount } from '@/lib/format'
 interface Props {
   property: TokkoProperty
   operationType?: 'Sale' | 'Rent' | 'Temporary Rent'
+  // Si se indica (ms), la tarjeta entra con un fundido escalonado. Sin valor: sin animación de entrada.
+  enterDelay?: number
 }
 
 const TYPE_ES: Record<string, string> = {
@@ -69,7 +71,7 @@ function getCity(p: TokkoProperty): string {
   return parts[2] ?? parts[parts.length - 1] ?? ''
 }
 
-export default function PropertyCard({ property, operationType }: Props) {
+export default function PropertyCard({ property, operationType, enterDelay }: Props) {
   const opType  = operationType ?? property.operations[0]?.operation_type
   const isTemp  = opType?.toLowerCase() === 'temporary rent'
   const price   = getOperationPrice(property, opType)
@@ -94,11 +96,11 @@ export default function PropertyCard({ property, operationType }: Props) {
 
   const prev = (e: React.MouseEvent) => {
     e.preventDefault()
-    setIdx(i => (i - 1 + total) % total)
+    setIdx(i => Math.max(i - 1, 0))
   }
   const next = (e: React.MouseEvent) => {
     e.preventDefault()
-    setIdx(i => (i + 1) % total)
+    setIdx(i => Math.min(i + 1, total - 1))
   }
 
   const saveScroll = useCallback(() => {
@@ -106,12 +108,17 @@ export default function PropertyCard({ property, operationType }: Props) {
   }, [])
 
   return (
-    <Link href={`/propiedades/${property.id}`} onClick={saveScroll} className="group block bg-white rounded-xl overflow-hidden shadow-sm md:hover:shadow-md md:hover:-translate-y-1 transition-all duration-200">
+    <Link
+      href={`/propiedades/${property.id}`}
+      onClick={saveScroll}
+      className={`group block bg-white rounded-xl overflow-hidden shadow-sm md:hover:shadow-md md:hover:-translate-y-1 transition-[transform,box-shadow] duration-300 ease-soft${enterDelay !== undefined ? ' animate-card-in' : ''}`}
+      style={enterDelay ? { animationDelay: `${enterDelay}ms` } : undefined}
+    >
       <div
         className="relative h-52 overflow-hidden bg-gray-100"
       >
 
-        {/* Pre-render all 3 real photos — instant switching via opacity */}
+        {/* Pre-render all 3 real photos — switching is a soft crossfade via opacity */}
         {photos.length > 0 ? photos.map((photo, i) => (
           <Image
             key={photo.image}
@@ -119,7 +126,7 @@ export default function PropertyCard({ property, operationType }: Props) {
             alt={property.publication_title || property.address}
             fill
             className={`object-cover ${i > 0 ? 'hidden md:block' : ''}`}
-            style={{ opacity: i === idx ? 1 : 0, transition: 'none' }}
+            style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 350ms ease' }}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             priority={i === 0}
           />
@@ -131,7 +138,7 @@ export default function PropertyCard({ property, operationType }: Props) {
         {hasMore && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center z-10"
-            style={{ opacity: isMoreSlide ? 1 : 0, transition: 'none', pointerEvents: isMoreSlide ? 'auto' : 'none' }}
+            style={{ opacity: isMoreSlide ? 1 : 0, transition: 'opacity 350ms ease', pointerEvents: isMoreSlide ? 'auto' : 'none' }}
           >
             {/* Blurred background using last photo */}
             <Image
@@ -157,14 +164,16 @@ export default function PropertyCard({ property, operationType }: Props) {
         {/* Arrows — desktop only, visible on hover */}
         {total > 1 && (
           <>
-            <button
-              onClick={prev}
-              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
-              aria-label="Foto anterior"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            {!isMoreSlide && (
+            {idx > 0 && (
+              <button
+                onClick={prev}
+                className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                aria-label="Foto anterior"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            )}
+            {idx < total - 1 && (
               <button
                 onClick={next}
                 className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-7 h-7 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"

@@ -6,10 +6,17 @@ import Image from 'next/image'
 interface Photo { image: string; is_blueprint?: boolean }
 interface Props  { photos: Photo[]; title: string }
 
+const SLIDE_MS = 350
+
 export default function PhotoGallery({ photos, title }: Props) {
   const [open, setOpen]           = useState(false)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+  const [dragX, setDragX]         = useState(0)        // desplazamiento del dedo, en px
+  const [settling, setSettling]   = useState(false)    // true mientras corre la animación de cambio
   const scrollRef = useRef<HTMLDivElement>(null)
+  const trackRef  = useRef<HTMLDivElement>(null)
+  const touchRef  = useRef<{ x: number; y: number; t: number; axis: 'h' | 'v' | null } | null>(null)
+  const movedRef  = useRef(false)
 
   // Lock body scroll while gallery or lightbox is open
   useEffect(() => {
@@ -17,23 +24,81 @@ export default function PhotoGallery({ photos, title }: Props) {
     return () => { document.body.style.overflow = '' }
   }, [open, lightboxIdx])
 
+  const openLightbox  = useCallback((idx: number) => { setDragX(0); setSettling(false); setLightboxIdx(idx) }, [])
+  const closeLightbox = useCallback(() => { setLightboxIdx(null); setDragX(0); setSettling(false) }, [])
+
+  // Pasa a la foto anterior/siguiente deslizando la pista con una transición suave. Sirve para el dedo,
+  // las flechas y el teclado. Si no hay foto en esa dirección, hace un pequeño rebote.
+  const slideTo = (dir: 1 | -1) => {
+    if (lightboxIdx === null || settling) return
+    const target = lightboxIdx + dir
+    setSettling(true)
+    if (target < 0 || target >= photos.length) {
+      setDragX(0)
+      window.setTimeout(() => setSettling(false), SLIDE_MS)
+      return
+    }
+    const w = trackRef.current?.clientWidth ?? window.innerWidth
+    setDragX(-dir * w)
+    window.setTimeout(() => {
+      // Al terminar, las fotos se reacomodan y la pista vuelve al centro sin animación (no se nota el salto).
+      setSettling(false)
+      setDragX(0)
+      setLightboxIdx(target)
+    }, SLIDE_MS)
+  }
+  const slideRef = useRef(slideTo)
+  slideRef.current = slideTo
+
   // Keyboard: Escape closes, arrows navigate lightbox
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (lightboxIdx !== null) {
-        if (e.key === 'Escape')      { setLightboxIdx(null); return }
-        if (e.key === 'ArrowRight')  setLightboxIdx(i => i !== null ? Math.min(i + 1, photos.length - 1) : i)
-        if (e.key === 'ArrowLeft')   setLightboxIdx(i => i !== null ? Math.max(i - 1, 0) : i)
+        if (e.key === 'Escape')      { closeLightbox(); return }
+        if (e.key === 'ArrowRight')  slideRef.current(1)
+        if (e.key === 'ArrowLeft')   slideRef.current(-1)
       } else if (open && e.key === 'Escape') {
         setOpen(false)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open, lightboxIdx, photos.length])
+  }, [open, lightboxIdx, closeLightbox])
 
-  const openLightbox = useCallback((idx: number) => setLightboxIdx(idx), [])
-  const closeLightbox = useCallback(() => setLightboxIdx(null), [])
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (settling || e.touches.length > 1) return
+    const t = e.touches[0]
+    touchRef.current = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null }
+    movedRef.current = false
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    const st = touchRef.current
+    if (!st || lightboxIdx === null) return
+    const t = e.touches[0]
+    const dx = t.clientX - st.x, dy = t.clientY - st.y
+    if (!st.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      st.axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+    }
+    if (st.axis !== 'h') return
+    movedRef.current = true
+    // En la primera/última foto el dedo "tira" con resistencia, para indicar que no hay más.
+    const sinMas = (lightboxIdx === 0 && dx > 0) || (lightboxIdx === photos.length - 1 && dx < 0)
+    setDragX(sinMas ? dx * 0.3 : dx)
+  }
+  const onTouchEnd = () => {
+    const st = touchRef.current
+    touchRef.current = null
+    // El "clic" que el navegador genera justo al soltar tras arrastrar no debe cerrar el visor; se vuelve
+    // a permitir un instante después.
+    window.setTimeout(() => { movedRef.current = false }, 120)
+    if (!st || st.axis !== 'h') return
+    const w = trackRef.current?.clientWidth ?? window.innerWidth
+    const rapido = Math.abs(dragX) / Math.max(Date.now() - st.t, 1) > 0.5
+    const lejos  = Math.abs(dragX) > w * 0.2
+    if ((lejos || rapido) && Math.abs(dragX) > 24) slideTo(dragX < 0 ? 1 : -1)
+    else { setSettling(true); setDragX(0); window.setTimeout(() => setSettling(false), SLIDE_MS) }
+  }
 
   if (!photos.length) {
     return (
@@ -61,12 +126,12 @@ export default function PhotoGallery({ photos, title }: Props) {
       {/* ── Thumbnail grid ── */}
       <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden h-[260px] sm:h-[480px]">
         <button onClick={() => setOpen(true)} className="col-span-3 row-span-2 relative overflow-hidden group">
-          <Image src={photos[0].image} alt={title} fill priority className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="75vw" />
+          <Image src={photos[0].image} alt={title} fill priority className="object-cover group-hover:scale-105 transition-transform duration-500 ease-soft" sizes="75vw" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
         </button>
         {photos.slice(1, 3).map((ph, j) => (
           <button key={j} onClick={() => setOpen(true)} className="relative overflow-hidden group">
-            <Image src={ph.image} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="25vw" />
+            <Image src={ph.image} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-500 ease-soft" sizes="25vw" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
             {j === 1 && photos.length > 3 && (
               <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -79,7 +144,7 @@ export default function PhotoGallery({ photos, title }: Props) {
 
       {/* ── Full-screen scroll gallery ── */}
       {open && (
-        <div className={`fixed inset-0 z-[1100] bg-black flex flex-col${lightboxIdx !== null ? ' invisible' : ''}`}>
+        <div className={`fixed inset-0 z-[1100] bg-black flex flex-col animate-fade-soft${lightboxIdx !== null ? ' invisible' : ''}`}>
           {/* Fixed close button */}
           <button
             onClick={() => setOpen(false)}
@@ -106,12 +171,12 @@ export default function PhotoGallery({ photos, title }: Props) {
                     <button
                       key={ri}
                       onClick={() => openLightbox(row.idx)}
-                      className="relative w-full rounded-xl overflow-hidden bg-white/5 cursor-zoom-in group block"
+                      className="relative w-fit max-w-full mx-auto rounded-xl overflow-hidden bg-white/5 cursor-zoom-in group block"
                     >
                       <img
                         src={ph.image}
                         alt={`${title} — foto ${row.idx + 1}`}
-                        className="w-full h-auto block group-hover:brightness-90 transition-[filter] duration-200"
+                        className="w-auto h-auto max-w-full max-h-[60vh] block group-hover:brightness-90 transition-[filter] duration-200"
                         loading={row.idx === 0 ? 'eager' : 'lazy'}
                       />
                       <span className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full pointer-events-none">
@@ -154,10 +219,7 @@ export default function PhotoGallery({ photos, title }: Props) {
 
       {/* ── Lightbox ── */}
       {lightboxIdx !== null && (
-        <div
-          className="fixed inset-0 z-[1200] bg-black/95 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
+        <div className="fixed inset-0 z-[1200] bg-black/95 animate-fade-soft">
           {/* Close */}
           <button
             onClick={closeLightbox}
@@ -170,16 +232,16 @@ export default function PhotoGallery({ photos, title }: Props) {
           </button>
 
           {/* Counter */}
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[1300] bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full">
             {lightboxIdx + 1} / {photos.length}
           </div>
 
           {/* Prev arrow */}
           {lightboxIdx > 0 && (
             <button
-              onClick={e => { e.stopPropagation(); setLightboxIdx(lightboxIdx - 1) }}
+              onClick={e => { e.stopPropagation(); slideTo(-1) }}
               aria-label="Foto anterior"
-              className="fixed left-3 top-1/2 -translate-y-1/2 z-[1300] w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+              className="hidden md:flex fixed left-3 top-1/2 -translate-y-1/2 z-[1300] w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm items-center justify-center text-white hover:bg-black/80 transition-colors"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6"/>
@@ -190,9 +252,9 @@ export default function PhotoGallery({ photos, title }: Props) {
           {/* Next arrow */}
           {lightboxIdx < photos.length - 1 && (
             <button
-              onClick={e => { e.stopPropagation(); setLightboxIdx(lightboxIdx + 1) }}
+              onClick={e => { e.stopPropagation(); slideTo(1) }}
               aria-label="Foto siguiente"
-              className="fixed right-3 top-1/2 -translate-y-1/2 z-[1300] w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+              className="hidden md:flex fixed right-3 top-1/2 -translate-y-1/2 z-[1300] w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm items-center justify-center text-white hover:bg-black/80 transition-colors"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6"/>
@@ -200,14 +262,44 @@ export default function PhotoGallery({ photos, title }: Props) {
             </button>
           )}
 
-          {/* Image */}
-          <div className="max-w-5xl max-h-[90vh] w-full px-16 flex items-center justify-center" onClick={e => e.stopPropagation()}>
-            <img
-              src={photos[lightboxIdx].image}
-              alt={`${title} — foto ${lightboxIdx + 1}`}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg select-none"
-              draggable={false}
-            />
+          {/* Pista deslizable: foto anterior, actual y siguiente. En celular la foto ocupa todo el ancho. */}
+          <div
+            ref={trackRef}
+            className="absolute inset-0 overflow-hidden"
+            style={{ touchAction: 'pan-y' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onTouchCancel={onTouchEnd}
+          >
+            <div
+              className="flex h-full"
+              style={{
+                width: '300%',
+                transform: `translateX(calc(-33.3333% + ${dragX}px))`,
+                transition: settling ? `transform ${SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)` : 'none',
+                willChange: 'transform',
+              }}
+            >
+              {[lightboxIdx - 1, lightboxIdx, lightboxIdx + 1].map(i => (
+                <div
+                  key={i}
+                  className="h-full flex items-center justify-center md:px-16"
+                  style={{ width: '33.3333%' }}
+                  onClick={() => { if (!movedRef.current) closeLightbox() }}
+                >
+                  {photos[i] && (
+                    <img
+                      src={photos[i].image}
+                      alt={`${title} — foto ${i + 1}`}
+                      className="max-w-full max-h-[90vh] md:max-w-4xl object-contain md:rounded-lg select-none"
+                      draggable={false}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -244,7 +244,7 @@ export default function FirmaClient({ token }: { token: string }) {
 
   // Firmado completamente (todas las firmas recibidas)
   if (signed && !done) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div key="signed" className="min-h-screen bg-gray-50 flex items-center justify-center p-6 animate-fade-soft">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">
         <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -260,7 +260,7 @@ export default function FirmaClient({ token }: { token: string }) {
   )
 
   if (error) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div key="error" className="min-h-screen bg-gray-50 flex items-center justify-center p-6 animate-fade-soft">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">
         <p className="text-gray-700 font-semibold mb-2">Enlace no válido</p>
         <p className="text-gray-400 text-sm">Este enlace no es válido o expiró. Contactá al asesor para obtener uno nuevo.</p>
@@ -272,7 +272,7 @@ export default function FirmaClient({ token }: { token: string }) {
   if (done) {
     const remaining = sigRequired - sigCount
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div key="done" className="min-h-screen bg-gray-50 flex items-center justify-center p-6 animate-fade-soft">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">
           <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -325,7 +325,7 @@ export default function FirmaClient({ token }: { token: string }) {
   const currentSig  = sigCount + 1  // número de esta firma
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div key="form" className="min-h-screen bg-gray-50 animate-fade-soft">
 
       {/* Navbar */}
       <div className="bg-brand-green py-4 px-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">

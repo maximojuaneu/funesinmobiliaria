@@ -67,7 +67,7 @@ export default function ShareButton({ propertyAddress, propertyId }: ShareButton
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 w-72 overflow-hidden">
+        <div className="absolute left-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 w-72 overflow-hidden animate-menu-in">
           <button
             onClick={copyLink}
             className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

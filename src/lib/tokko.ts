@@ -134,10 +134,9 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{ ob
   if (filters.surfaceFrom) filtered = filtered.filter(p => p.total_surface >= filters.surfaceFrom!)
   if (filters.surfaceTo)   filtered = filtered.filter(p => p.total_surface <= filters.surfaceTo!)
 
-  // Sort: 1) featured first  2) newest created_at first
+  // Sort: newest created_at first. Featured properties are mixed in with the rest (they only get
+  // their own spot on the home page and in the "Solo destacadas" listing option).
   filtered.sort((a, b) => {
-    if (a.is_starred_on_web && !b.is_starred_on_web) return -1
-    if (!a.is_starred_on_web && b.is_starred_on_web) return 1
     const dateA = new Date(a.created_at ?? 0).getTime()
     const dateB = new Date(b.created_at ?? 0).getTime()
     return dateB - dateA

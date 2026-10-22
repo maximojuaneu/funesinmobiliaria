@@ -21,7 +21,7 @@ export default function TasacionPage() {
         </div>
       </div>
 
-      <section className="max-w-6xl mx-auto px-6 py-16 grid lg:grid-cols-2 gap-14 items-start">
+      <section className="max-w-6xl mx-auto px-6 pt-5 pb-16 grid lg:grid-cols-2 gap-14 items-start">
         <TasacionForm />
 
         <div className="space-y-8">

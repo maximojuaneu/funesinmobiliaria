@@ -20,7 +20,7 @@ export default function ContactoPage() {
           <p className="text-center text-xs text-gray-600 tracking-widest uppercase">Dejanos tu consulta y te respondemos a la brevedad.</p>
         </div>
       </div>
-      <section className="max-w-6xl mx-auto px-6 py-16 grid lg:grid-cols-2 gap-14">
+      <section className="max-w-6xl mx-auto px-6 pt-5 pb-16 grid lg:grid-cols-2 gap-14">
         <ContactForm />
         <div className="space-y-8">
           <div>

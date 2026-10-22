@@ -25,7 +25,7 @@ function CarouselCard({ property }: { property: TokkoProperty }) {
   return (
     <Link
       href={`/propiedades/${property.id}`}
-      className="featured-card group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex-shrink-0"
+      className="featured-card group block bg-white rounded-xl overflow-hidden isolate shadow-sm hover:shadow-md transition-shadow duration-300 ease-soft flex-shrink-0"
     >
       <div className="featured-card-img relative overflow-hidden bg-gray-100">
         <Image
@@ -180,7 +180,8 @@ export default function FeaturedCarousel({ properties }: { properties: TokkoProp
   }
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden px-3 -mx-3 py-6 -my-6">
+      {/* El relleno (compensado con márgenes negativos) deja lugar a la sombra: sin él, overflow-hidden la corta. */}
       <style>{`
         .featured-card     { width: 320px; }
         .featured-card-img { height: 208px; }

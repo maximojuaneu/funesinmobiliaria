@@ -35,7 +35,7 @@ export default function TasacionForm() {
 
   if (status === 'ok') {
     return (
-      <div className="bg-brand-light rounded-2xl p-10 text-center">
+      <div className="bg-brand-light rounded-2xl p-10 text-center animate-rise-in">
         <h3 className="text-xl font-bold text-brand-green mb-2">¡Solicitud recibida!</h3>
         <p className="text-gray-600">Nuestro equipo te contactará en menos de 24 hs.</p>
         <button onClick={() => setStatus('idle')} className="mt-6 btn-outline">
@@ -164,13 +164,13 @@ export default function TasacionForm() {
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="btn-primary w-full text-center py-4 text-base"
+        className="btn-primary w-full text-center py-4 text-base disabled:opacity-70 disabled:cursor-wait transition-[background-color,opacity] duration-300"
       >
         {status === 'loading' ? 'Enviando...' : 'Solicitar tasación'}
       </button>
 
       {status === 'error' && (
-        <p className="text-red-500 text-sm text-center">
+        <p className="text-red-500 text-sm text-center animate-fade-soft">
           Hubo un error. Intentá nuevamente.
         </p>
       )}

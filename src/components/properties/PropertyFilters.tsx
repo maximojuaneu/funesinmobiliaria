@@ -31,9 +31,11 @@ interface Props {
   operationType: 'Sale' | 'Rent' | 'TempRent'
   mobile?: boolean
   onClose?: () => void
+  // Permite que la página del listado sepa cuándo hay una navegación en curso (para atenuar la lista).
+  onNavigate?: (url: string, scroll: boolean) => void
 }
 
-export default function PropertyFilters({ operationType, mobile, onClose }: Props) {
+export default function PropertyFilters({ operationType, mobile, onClose, onNavigate }: Props) {
   const router       = useRouter()
   const searchParams = useSearchParams()
 
@@ -89,15 +91,18 @@ export default function PropertyFilters({ operationType, mobile, onClose }: Prop
 
   const basePath = (op: string) => op === 'Sale' ? '/venta' : '/alquiler'
 
+  const go = (url: string, scroll: boolean) =>
+    onNavigate ? onNavigate(url, scroll) : router.push(url, { scroll })
+
   const applyFilters = (newLocations?: string[]) => {
     const qs = buildParams(operation, newLocations)
-    router.push(`${basePath(operation)}${qs ? `?${qs}` : ''}`, { scroll: false })
+    go(`${basePath(operation)}${qs ? `?${qs}` : ''}`, false)
     onClose?.()
   }
 
   const clearAll = () => {
     setType(''); setSuites([]); setLocations([]); setPriceFrom(''); setPriceTo('')
-    router.push(basePath(operation))
+    go(basePath(operation), true)
   }
 
   if (mobile) return (

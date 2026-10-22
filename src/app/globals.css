@@ -24,6 +24,15 @@
 
   html { scroll-behavior: smooth; }
 
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
   body {
     @apply text-gray-900 bg-white;
     font-family: var(--font-montserrat), sans-serif;
@@ -53,18 +62,35 @@
   .tag-desarrollo {
     @apply bg-amber-600 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wide;
   }
+  /* Encabezado de página: la mitad de alto que antes. El menú es fijo y ocupa los primeros 80 px, por eso
+     el relleno superior los incluye. La imagen usa "cover": se escala sin deformarse y solo se recorta. */
   .page-hero {
     @apply border-b border-gray-200;
-    padding-top: calc(80px + 48px);
-    padding-bottom: 48px;
+    padding-top: calc(80px + 18px);
+    padding-bottom: 20px;
     background-image: url('/banner-hero.jpg');
     background-size: cover;
     background-position: center top;
   }
-  .page-hero h1 {
-    font-family: var(--font-montserrat), sans-serif;
-    letter-spacing: 0.04em !important;
+  /* Título de página (también la clase .page-title, para páginas con encabezado propio como Nosotros):
+     la misma tipografía de los títulos de la home (Eurostile, heredada de h1), con la
+     primera letra en mayúscula y el resto en minúscula, tal como está escrito en cada página. */
+  .page-hero h1,
+  .page-title {
+    font-size: clamp(1.75rem, 4.5vw, 2.5rem) !important;
+    line-height: 1.1 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    margin-bottom: 6px !important;
   }
+  .page-hero .page-hero-eyebrow {
+    margin-bottom: 6px;
+  }
+  /* Algunas páginas envuelven el título en un contenedor con margen propio: se unifican los espacios
+     para que todos los encabezados midan lo mismo. */
+  .page-hero div.flex > h1 { margin-bottom: 0 !important; }
+  .page-hero .mb-4 { margin-bottom: 6px !important; }
+  .page-hero .mt-4 { margin-top: 6px !important; }
   @media (max-width: 640px) {
     .page-hero {
       background-position: left top;
@@ -95,4 +121,24 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+
+/* Aparición al hacer scroll (ver components/ui/Reveal.tsx) */
+.reveal-hidden { opacity: 0; translate: 0 20px; }
+.reveal-hidden.reveal-in {
+  opacity: 1;
+  translate: none;
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+    translate 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+}
+
+/* Respeta a quienes desactivan las animaciones en su dispositivo */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

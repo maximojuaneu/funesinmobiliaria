@@ -20,7 +20,7 @@ export default function PrivacidadPage() {
         </div>
       </div>
 
-      <section className="max-w-3xl mx-auto px-6 py-16 space-y-10 text-gray-700 leading-relaxed">
+      <section className="max-w-3xl mx-auto px-6 pt-5 pb-16 space-y-10 text-gray-700 leading-relaxed">
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-3">Quiénes somos</h2>
           <p>

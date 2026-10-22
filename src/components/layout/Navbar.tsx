@@ -119,7 +119,7 @@ export default function Navbar() {
               </svg>
             </button>
             {alquilerOpen && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden min-w-[160px] z-50">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden min-w-[160px] z-50 animate-menu-in">
                 {alquilerDropdown.map(item => (
                   <Link
                     key={item.href}
@@ -193,7 +193,7 @@ export default function Navbar() {
 
       {/* Mobile menu — always white bg */}
       {menuOpen && (
-        <div className="lg:hidden border-t border-gray-200 bg-white px-6 py-4 flex flex-col gap-4 text-sm font-semibold">
+        <div className="lg:hidden border-t border-gray-200 bg-white px-6 py-4 flex flex-col gap-4 text-sm font-semibold animate-menu-in">
           <Link href="/venta" onClick={() => setMenuOpen(false)} className={`tracking-wide hover:text-brand-green ${pathname.startsWith('/venta') ? 'text-brand-green' : 'text-gray-700'}`}>VENTA</Link>
           <div className="flex flex-col gap-3">
             <button
@@ -206,7 +206,7 @@ export default function Navbar() {
               </svg>
             </button>
             {mobileAlqOpen && (
-              <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-100">
+              <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-100 animate-menu-in">
                 {alquilerDropdown.map(item => (
                   <Link
                     key={item.href}

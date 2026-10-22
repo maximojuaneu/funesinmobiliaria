@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useTransition, Fragment } from 'react'
 import { Suspense } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import PropertyCard from './PropertyCard'
@@ -7,25 +7,12 @@ import PropertyFilters from './PropertyFilters'
 import PropertyMapView from './PropertyMapView'
 import type { TokkoProperty } from '@/types/tokko'
 import { getOperationPrice } from '@/lib/tokko'
+import { isPopNavigation } from '@/lib/nav-intent'
 
 const SCROLL_KEY = 'prop-list-scroll'
 const PAGE_SIZE = 24
-const CHUNK_SIZE = 6
-const FEAT_PER_CHUNK = 3
 
 type SortKey = 'recent' | 'price_asc' | 'price_desc' | 'featured'
-
-// Literal Tailwind classes (must appear as-is in source for the JIT scanner to pick them up).
-const BUBBLE_SPAN_CLASS: Record<number, string> = {
-  1: 'col-span-1 md:col-span-1 xl:col-span-1',
-  2: 'col-span-1 md:col-span-2 xl:col-span-2',
-  3: 'col-span-1 md:col-span-2 xl:col-span-3',
-}
-const BUBBLE_INNER_GRID_CLASS: Record<number, string> = {
-  1: 'grid-cols-1',
-  2: 'grid-cols-1 md:grid-cols-2',
-  3: 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3',
-}
 
 interface Props {
   properties: TokkoProperty[]
@@ -68,9 +55,23 @@ export default function PropertiesPageContent({ properties, operationType, initi
   })
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
-  const [featSeed, setFeatSeed] = useState(0)
-  useEffect(() => { setFeatSeed(Math.random()) }, [])
   const filtersRef = useRef<HTMLDivElement>(null)
+
+  // Mientras se aplican los filtros, el listado se atenúa (el servidor tarda en responder).
+  const [isFiltering, startFiltering] = useTransition()
+  const navigateFilters = (url: string, scroll: boolean) =>
+    startFiltering(() => router.push(url, { scroll }))
+
+  // Sube cada vez que cambia el contenido del listado (filtros, orden, página o vista), salvo en la
+  // carga inicial: re-monta la lista para que las tarjetas entren con animación. En la primera carga
+  // no se anima nada, así lo principal aparece sin demora.
+  const listKeyRef = useRef({ properties, sort, page, view, n: 0 })
+  const lk = listKeyRef.current
+  if (lk.properties !== properties || lk.sort !== sort || lk.page !== page || lk.view !== view) {
+    listKeyRef.current = { properties, sort, page, view, n: lk.n + 1 }
+  }
+  const listKey = listKeyRef.current.n
+  const enter = (i: number) => (listKey > 0 ? Math.min(i, 8) * 45 : undefined)
 
   useEffect(() => {
     const el = filtersRef.current
@@ -85,6 +86,8 @@ export default function PropertiesPageContent({ properties, operationType, initi
     if (!savedY) return
     const y = parseInt(savedY, 10)
     sessionStorage.removeItem(SCROLL_KEY)
+    // Solo al volver con "atrás": si se llegó desde el menú o un enlace, el listado abre arriba.
+    if (!isPopNavigation()) return
     requestAnimationFrame(() => requestAnimationFrame(() => { window.scrollTo({ top: y, behavior: 'instant' }) }))
   }, [])
 
@@ -93,7 +96,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
 
   const sorted = useMemo(() => {
     const arr = [...properties]
-    if (sort === 'recent') return arr.sort((a, b) => b.id - a.id)
+    if (sort === 'recent' || sort === 'featured') return arr.sort((a, b) => b.id - a.id)
     return arr.sort((a, b) => {
       const pa = getOperationPrice(a, baseOpType)?.amount ?? 0
       const pb = getOperationPrice(b, baseOpType)?.amount ?? 0
@@ -101,18 +104,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
     })
   }, [properties, sort, baseOpType])
 
-  const featuredPool = useMemo(() => {
-    const arr = [...sorted.filter(p => p.is_starred_on_web)]
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(((featSeed * (i + 1) * 2654435761) % 1) * (i + 1))
-      ;[arr[i], arr[j]] = [arr[j], arr[i]]
-    }
-    return arr
-  }, [sorted, featSeed])
-  const regularPool = useMemo(
-    () => sorted.filter(p => !p.is_starred_on_web),
-    [sorted]
-  )
+  const featuredCount = useMemo(() => properties.filter(p => p.is_starred_on_web).length, [properties])
 
   const filterKey = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString())
@@ -139,9 +131,13 @@ export default function PropertiesPageContent({ properties, operationType, initi
     if (filtersChanged || sortChanged) setPage(1)
   }, [filterKey, sort])
 
-  const useBubbles   = sort === 'recent'
-  const displayPool  = sort === 'featured' ? featuredPool : useBubbles ? regularPool : sorted
+  // Las destacadas van mezcladas con el resto según el orden elegido; solo "Solo destacadas" las separa.
+  const displayPool = useMemo(
+    () => (sort === 'featured' ? sorted.filter(p => p.is_starred_on_web) : sorted),
+    [sorted, sort]
+  )
   const displayTotal = displayPool.length
+  const totalPages   = Math.ceil(displayTotal / PAGE_SIZE)
 
   const paginated = useMemo(
     () => displayPool.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -155,53 +151,6 @@ export default function PropertiesPageContent({ properties, operationType, initi
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
     requestAnimationFrame(() => requestAnimationFrame(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }))
   }
-
-  const getFeatChunk = (globalCi: number): TokkoProperty[] => {
-    const start = globalCi * FEAT_PER_CHUNK
-    return featuredPool.slice(start, start + FEAT_PER_CHUNK)
-  }
-
-  // Build every chunk (bubble + regular cards) over the whole regularPool, sized
-  // so it always completes full grid rows (never split across pages).
-  const allChunks = useMemo(() => {
-    const totalFeatChunks = Math.ceil(featuredPool.length / FEAT_PER_CHUNK)
-    const result: { globalCi: number; cards: TokkoProperty[] }[] = []
-    let offset = 0
-    let ci = 0
-    while (offset < regularPool.length || ci < totalFeatChunks) {
-      const featN = ci < totalFeatChunks
-        ? Math.min(FEAT_PER_CHUNK, featuredPool.length - ci * FEAT_PER_CHUNK)
-        : 0
-      const size = (featN === 0 || featN === 3) ? CHUNK_SIZE : 9 - featN
-      const cards = regularPool.slice(offset, offset + size)
-      if (cards.length === 0 && featN === 0) break
-      result.push({ globalCi: ci, cards })
-      offset += size
-      ci++
-    }
-    return result
-  }, [regularPool, featuredPool])
-
-  // Group whole chunks into pages (~PAGE_SIZE cards each) without ever splitting a chunk.
-  const chunkPages = useMemo(() => {
-    const pages: typeof allChunks[] = []
-    let current: typeof allChunks = []
-    let count = 0
-    for (const chunk of allChunks) {
-      if (count > 0 && count + chunk.cards.length > PAGE_SIZE) {
-        pages.push(current)
-        current = []
-        count = 0
-      }
-      current.push(chunk)
-      count += chunk.cards.length
-    }
-    if (current.length) pages.push(current)
-    return pages
-  }, [allChunks])
-
-  const totalPages = useBubbles ? (chunkPages.length || 1) : Math.ceil(displayTotal / PAGE_SIZE)
-  const pageChunks = useBubbles ? (chunkPages[page - 1] || []) : []
 
   return (
     <>
@@ -233,7 +182,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
         </div>
       )}
 
-      <div className={`max-w-7xl mx-auto px-6 py-12 ${view === 'map' ? 'hidden md:block' : ''}`}>
+      <div className={`max-w-7xl mx-auto px-6 pt-5 pb-12 ${view === 'map' ? 'hidden md:block' : ''}`}>
         <div className="flex items-center gap-3 mb-6">
           <div className="flex items-center gap-1.5 md:hidden overflow-x-auto flex-1 min-w-0 pr-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button type="button" onClick={() => setShowMobileFilters(true)}
@@ -257,7 +206,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
                 <option value="recent">Más recientes</option>
                 <option value="price_asc">Menor precio</option>
                 <option value="price_desc">Mayor precio</option>
-                {featuredPool.length > 0 && <option value="featured">Solo destacadas</option>}
+                {featuredCount > 0 && <option value="featured">Solo destacadas</option>}
               </select>
               <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
@@ -274,7 +223,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
                   <option value="recent">Más recientes</option>
                   <option value="price_asc">Menor precio</option>
                   <option value="price_desc">Mayor precio</option>
-                  {featuredPool.length > 0 && <option value="featured">Solo destacadas</option>}
+                  {featuredCount > 0 && <option value="featured">Solo destacadas</option>}
                 </select>
                 <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9"/>
@@ -304,59 +253,24 @@ export default function PropertiesPageContent({ properties, operationType, initi
 
         <div className="flex gap-8 items-start">
           <div ref={filtersRef} className="hidden lg:block w-72 flex-shrink-0">
-            <Suspense><PropertyFilters operationType={operationType} /></Suspense>
+            <Suspense><PropertyFilters operationType={operationType} onNavigate={navigateFilters} /></Suspense>
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div
+            className={`flex-1 min-w-0 transition-opacity duration-300 ease-soft ${isFiltering ? 'opacity-60' : ''}`}
+            aria-busy={isFiltering}
+          >
             {view === 'map' ? (
-              <PropertyMapView properties={sorted} operationType={baseOpType} />
+              <div key={listKey} className={listKey > 0 ? 'animate-fade-soft' : undefined}>
+                <PropertyMapView properties={sorted} operationType={baseOpType} />
+              </div>
             ) : sorted.length > 0 ? (
-              <>
-                {!useBubbles ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {paginated.map(p => <PropertyCard key={p.id} property={p} operationType={baseOpType} />)}
-                  </div>
-                ) : featuredPool.length > 0 ? (
-                  <div className="space-y-6">
-                    {pageChunks.map(({ globalCi, cards }) => {
-                      const featItems = getFeatChunk(globalCi)
-                      return (
-                        <div key={globalCi} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                          {featItems.length > 0 && (
-                            <div className={`bg-brand-green/25 border border-brand-green/50 rounded-2xl p-5 ${BUBBLE_SPAN_CLASS[featItems.length]}`}>
-                              <div className="flex items-center gap-2 mb-4">
-                                <svg className="w-4 h-4 text-brand-green flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                                <span className="font-sans text-xs font-bold text-brand-green uppercase tracking-widest">Propiedades destacadas</span>
-                              </div>
-                              <div className={`grid gap-6 ${BUBBLE_INNER_GRID_CLASS[featItems.length]}`}>
-                                {featItems.map(p => <PropertyCard key={p.id} property={p} operationType={baseOpType} />)}
-                              </div>
-                            </div>
-                          )}
-                          {cards.map((p, idx) => {
-                            const n = featItems.length
-                            let offsetClass = ''
-                            if (n > 0 && n < 3 && idx < 3 - n) offsetClass += ' xl:mt-14'
-                            if (n > 0 && n < 2 && idx < 2 - n) offsetClass += ' md:mt-14'
-                            return (
-                              <div key={p.id} className={offsetClass || undefined}>
-                                <PropertyCard property={p} operationType={baseOpType} />
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {paginated.map(p => <PropertyCard key={p.id} property={p} operationType={baseOpType} />)}
-                  </div>
-                )}
+              <Fragment key={listKey}>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {paginated.map((p, i) => <PropertyCard key={p.id} property={p} operationType={baseOpType} enterDelay={enter(i)} />)}
+                </div>
                 <Pagination page={page} totalPages={totalPages} onChange={handlePageChange} />
-              </>
+              </Fragment>
             ) : (
               <div className="text-center py-20 text-gray-400">
                 <p className="text-lg font-medium">No se encontraron propiedades</p>
@@ -369,7 +283,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
 
       {showBackToTop && (
         <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 left-6 z-[800] flex items-center justify-center w-12 h-12 rounded-full bg-brand-green text-white shadow-lg hover:bg-brand-green/90 transition-all duration-200"
+          className="fixed bottom-8 left-6 z-[800] flex items-center justify-center w-12 h-12 rounded-full bg-brand-green text-white shadow-lg hover:bg-brand-green/90 transition-all duration-200 animate-rise-in"
           aria-label="Volver arriba">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="18 15 12 9 6 15"/>
@@ -379,8 +293,8 @@ export default function PropertiesPageContent({ properties, operationType, initi
 
       {showMobileFilters && (
         <div className="md:hidden fixed inset-0 z-[1300] flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileFilters(false)} />
-          <div className="relative bg-white rounded-t-2xl max-h-[88vh] flex flex-col shadow-2xl">
+          <div className="absolute inset-0 bg-black/50 animate-fade-soft" onClick={() => setShowMobileFilters(false)} />
+          <div className="relative bg-white rounded-t-2xl max-h-[88vh] flex flex-col shadow-2xl animate-sheet-up">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-lg font-bold text-gray-900">Filtros</h2>
               <button type="button" onClick={() => setShowMobileFilters(false)}
@@ -392,7 +306,7 @@ export default function PropertiesPageContent({ properties, operationType, initi
             </div>
             <div className="overflow-y-auto flex-1">
               <Suspense>
-                <PropertyFilters operationType={operationType} mobile onClose={() => setShowMobileFilters(false)} />
+                <PropertyFilters operationType={operationType} mobile onClose={() => setShowMobileFilters(false)} onNavigate={navigateFilters} />
               </Suspense>
             </div>
           </div>

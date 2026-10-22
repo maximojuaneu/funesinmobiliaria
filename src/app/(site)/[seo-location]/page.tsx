@@ -53,7 +53,7 @@ export default async function SeoPage({ params }: Props) {
           <p className="text-center text-xs text-gray-600 tracking-widest uppercase">{result.count} propiedad{result.count !== 1 ? 'es' : ''} disponible{result.count !== 1 ? 's' : ''}</p>
         </div>
       </div>
-      <section className="max-w-7xl mx-auto px-6 py-12">
+      <section className="max-w-7xl mx-auto px-6 pt-5 pb-12">
         {result.objects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {result.objects.map((p: any) => <PropertyCard key={p.id} property={p} />)}

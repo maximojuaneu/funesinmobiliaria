@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import Reveal from '@/components/ui/Reveal'
 import { getDevelopments, getDevelopmentCover } from '@/lib/tokko'
 
 export const revalidate = 300
@@ -28,15 +29,16 @@ export default async function EmprendimientosPage() {
         </div>
       </div>
 
-      <section className="max-w-7xl mx-auto px-6 py-16">
+      <section className="max-w-7xl mx-auto px-6 pt-5 pb-16">
         {result.objects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {result.objects.map((dev: any) => (
-              <Link key={dev.id} href={`/emprendimientos/${dev.id}`}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all border border-gray-100">
+            {result.objects.map((dev: any, i: number) => (
+              <Reveal key={dev.id} className="h-full" delay={(i % 3) * 90}>
+              <Link href={`/emprendimientos/${dev.id}`}
+                className="group block h-full bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-[transform,box-shadow] duration-300 ease-soft border border-gray-100">
                 <div className="relative h-56 overflow-hidden">
                   {getDevelopmentCover(dev.photos)
-                    ? <Image src={getDevelopmentCover(dev.photos)} alt={dev.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="33vw" />
+                    ? <Image src={getDevelopmentCover(dev.photos)} alt={dev.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500 ease-soft" sizes="33vw" />
                     : <div className="w-full h-full bg-brand-light" />
                   }
                   <span className="absolute top-3 left-3 tag-desarrollo">DESARROLLO</span>
@@ -48,6 +50,7 @@ export default async function EmprendimientosPage() {
                   <span className="inline-block mt-4 text-brand-green text-sm font-semibold group-hover:underline">Ver detalle →</span>
                 </div>
               </Link>
+              </Reveal>
             ))}
           </div>
         ) : (

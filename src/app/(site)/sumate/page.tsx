@@ -125,7 +125,7 @@ export default function SumatePage() {
   }
 
   if (sent) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 text-center animate-fade-soft">
       <div className="w-16 h-16 rounded-full bg-brand-light flex items-center justify-center mb-6">
         <svg className="w-8 h-8 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -148,7 +148,7 @@ export default function SumatePage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-16">
+      <div className="max-w-2xl mx-auto px-6 pt-5 pb-16">
         <form onSubmit={handleSubmit} className="space-y-8">
 
           {/* Datos personales */}
@@ -232,7 +232,7 @@ export default function SumatePage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-4 py-3">{error}</p>
+            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-4 py-3 animate-fade-soft">{error}</p>
           )}
 
           <button

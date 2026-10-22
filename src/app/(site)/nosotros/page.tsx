@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAgents, getAgentById, hasCustomAvatar } from '@/lib/tokko'
+import Reveal from '@/components/ui/Reveal'
 import type { TokkoAgent } from '@/types/tokko'
 
 export const metadata: Metadata = {
@@ -130,14 +131,14 @@ export default async function NosotrosPage() {
       <div className="relative -mt-32 bg-white">
 
         {/* Título de sección */}
-        <div className="max-w-7xl mx-auto px-6 pt-8 pb-4 text-center">
-          <span className="eyebrow">Quiénes somos</span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mt-2 uppercase tracking-wide sm:tracking-widest font-eurostile">Nosotros</h1>
-          <p className="text-gray-500 mt-3 text-lg">Construyendo confianza en el mercado inmobiliario.</p>
+        <div className="max-w-7xl mx-auto px-6 pt-8 text-center">
+          <span className="eyebrow mb-[6px]">Quiénes somos</span>
+          <h1 className="page-title font-extrabold text-gray-900">Nosotros</h1>
+          <p className="text-gray-500 text-lg">Construyendo confianza en el mercado inmobiliario.</p>
         </div>
 
         {/* Nuestra historia */}
-        <section className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-16 items-center">
+        <Reveal as="section" className="max-w-7xl mx-auto px-6 pt-[30px] pb-16 grid md:grid-cols-2 gap-16 items-center">
           <div>
             <span className="eyebrow">Nuestra historia</span>
             <h2 className="text-3xl font-bold mb-5">Más de 45 años acompañando a familias, inversores y empresas</h2>
@@ -175,10 +176,10 @@ export default async function NosotrosPage() {
               />
             </div>
           </div>
-        </section>
+        </Reveal>
 
         {/* Misión, Visión y Compromiso */}
-        <section className="max-w-7xl mx-auto px-6 py-20">
+        <Reveal as="section" className="max-w-7xl mx-auto px-6 py-20">
           <div className="text-center mb-14">
             <span className="eyebrow">Nuestra identidad</span>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-wide uppercase mt-2">Lo que nos define</h2>
@@ -234,7 +235,7 @@ export default async function NosotrosPage() {
               Nuestro compromiso es ofrecer una experiencia inmobiliaria confiable, eficiente y cercana, respaldada por más de cuatro décadas de trayectoria y por un equipo que entiende que detrás de cada propiedad existe un proyecto de vida.
             </p>
           </div>
-        </section>
+        </Reveal>
 
         {/* Equipo */}
         <section className="py-20 px-6 bg-cover bg-center" style={{ backgroundImage: "url('/marmol.jpeg')" }}>
@@ -254,10 +255,14 @@ export default async function NosotrosPage() {
                 <div className="h-px flex-1 bg-gray-200" />
               </div>
               <div className="grid grid-cols-2 gap-8 max-w-xl mx-auto">
-                {DIRECTION_MEMBERS.map(({ id, matricula, positionOverride }) => {
+                {DIRECTION_MEMBERS.map(({ id, matricula, positionOverride }, i) => {
                   const agent = direction.find(a => a.id === id)
                   if (!agent) return null
-                  return <DirectionCard key={id} agent={agent} matricula={matricula} positionOverride={positionOverride} />
+                  return (
+                    <Reveal key={id} className="h-full" delay={i * 120}>
+                      <DirectionCard agent={agent} matricula={matricula} positionOverride={positionOverride} />
+                    </Reveal>
+                  )
                 })}
               </div>
             </div>
@@ -271,8 +276,10 @@ export default async function NosotrosPage() {
                   <div className="h-px flex-1 bg-gray-200" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-10">
-                  {team.map(agent => (
-                    <TeamCard key={agent.id} agent={agent} />
+                  {team.map((agent, i) => (
+                    <Reveal key={agent.id} delay={(i % 4) * 90}>
+                      <TeamCard agent={agent} />
+                    </Reveal>
                   ))}
                 </div>
               </div>

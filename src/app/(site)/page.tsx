@@ -5,6 +5,7 @@ import FeaturedCarousel from '@/components/properties/FeaturedCarousel'
 import HeroSearch from '@/components/home/HeroSearch'
 import StatsCounter from '@/components/home/StatsCounter'
 import HeroVideo from '@/components/home/HeroVideo'
+import Reveal from '@/components/ui/Reveal'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export default async function HomePage() {
 
       {/* PROPIEDADES DESTACADAS */}
       <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+        <Reveal className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <div>
               <span className="eyebrow">Selección especial</span>
@@ -42,7 +43,7 @@ export default async function HomePage() {
             ? <FeaturedCarousel properties={featuredList} />
             : <p className="text-gray-500 text-sm">Las propiedades se cargarán automáticamente desde Tokko Broker.</p>
           }
-        </div>
+        </Reveal>
       </section>
 
       {/* TABS VENTA / ALQUILER */}
@@ -53,7 +54,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-black/45" />
         {/* fade inferior hacia el verde del CTA */}
         <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: 'linear-gradient(to bottom, transparent, #067148)' }} />
-        <div className="relative max-w-7xl mx-auto grid md:grid-cols-2 gap-6">
+        <Reveal className="relative max-w-7xl mx-auto grid md:grid-cols-2 gap-6">
           {[
             { title: 'Propiedades en VENTA', href: '/venta', sub: 'Casas, departamentos, terrenos y más.' },
             { title: 'Propiedades en ALQUILER', href: '/alquiler', sub: 'Viviendas y locales disponibles.' },
@@ -67,12 +68,12 @@ export default async function HomePage() {
               <span className="text-brand-green text-2xl group-hover:translate-x-1 transition-transform">→</span>
             </Link>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* CTA TASACIÓN */}
       <section className="bg-brand-green py-20 px-6">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+        <Reveal className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">¿Querés conocer el valor de tu propiedad?</h2>
             <p className="text-white/75">Informes profesionales realizados por expertos en el mercado.</p>
@@ -80,13 +81,13 @@ export default async function HomePage() {
           <Link href="/tasar-mi-propiedad" className="bg-white text-brand-green font-bold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0 text-lg">
             Solicitar tasación
           </Link>
-        </div>
+        </Reveal>
       </section>
 
       {/* EMPRENDIMIENTOS PREVIEW */}
       <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
-          <div className="flex-1">
+        <Reveal className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
+          <div className="flex-1 text-center md:text-left">
             <span className="eyebrow">Nuestros proyectos</span>
             <h2 className="section-title mb-4">EMPRENDIMIENTOS</h2>
             <p className="text-gray-600 mb-6">Invertí en los desarrollos más exclusivos de Funes, Roldán, Rosario y la región. Desde el pozo hasta entrega inmediata.</p>
@@ -100,7 +101,7 @@ export default async function HomePage() {
               <Image src="/aerea2.jpeg" alt="Emprendimiento aéreo 2" fill className="object-cover" sizes="(max-width: 768px) 45vw, 22vw" />
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* NOSOTROS STRIP */}
@@ -108,11 +109,11 @@ export default async function HomePage() {
         className="py-20 px-6 bg-cover bg-center"
         style={{ backgroundImage: "url('/marmol.jpeg')" }}
       >
-        <div className="max-w-5xl mx-auto text-center">
+        <Reveal className="max-w-5xl mx-auto text-center">
           <span className="eyebrow">Por qué elegirnos</span>
           <h2 className="section-title mb-14">Una inmobiliaria con trayectoria en el mercado</h2>
           <StatsCounter />
-        </div>
+        </Reveal>
       </section>
     </>
   )
