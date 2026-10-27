@@ -354,3 +354,16 @@ export async function getAgentById(id: number): Promise<TokkoAgent | null> {
     return null
   }
 }
+
+// Fotos de los usuarios de Tokko, por email y por nombre (el email del CRM puede no coincidir con el de Tokko).
+export async function getTokkoUserPhotos(): Promise<{ byEmail: Map<string, string>; byName: Map<string, string> }> {
+  const users = await tokkoFetchAll<TokkoAgent>('/user/')
+  const byEmail = new Map<string, string>()
+  const byName = new Map<string, string>()
+  for (const u of users) {
+    if (!hasCustomAvatar(u.picture)) continue
+    if (u.email) byEmail.set(u.email.toLowerCase().trim(), u.picture!)
+    if (u.name) byName.set(normalize(u.name).trim(), u.picture!)
+  }
+  return { byEmail, byName }
+}

@@ -4,6 +4,9 @@ import Image from 'next/image'
 import { getAgents, getAgentById, hasCustomAvatar } from '@/lib/tokko'
 import Reveal from '@/components/ui/Reveal'
 import type { TokkoAgent } from '@/types/tokko'
+import { getEquipoWeb, type PersonaWeb } from '@/lib/equipo-web'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Nosotros',
@@ -29,71 +32,81 @@ function AgentInitials({ name }: { name: string }) {
   )
 }
 
-function DirectionCard({ agent, matricula, positionOverride }: { agent: TokkoAgent; matricula?: string; positionOverride?: string }) {
-  const position = positionOverride || agent.position?.trim() || 'Dirección'
-  const hasPhoto = hasCustomAvatar(agent.picture)
+function DirectionCard({ persona }: { persona: PersonaWeb }) {
   return (
     <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
       <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '1/1', maxHeight: 240 }}>
-        {hasPhoto ? (
+        {persona.picture ? (
           <Image
-            src={agent.picture!}
-            alt={agent.name}
+            src={persona.picture}
+            alt={persona.name}
             fill
             className="object-cover object-top"
             sizes="(max-width: 768px) 50vw, 240px"
           />
         ) : (
-          <AgentInitials name={agent.name} />
+          <AgentInitials name={persona.name} />
         )}
       </div>
       <div className="p-6 border-t border-gray-100 flex flex-col flex-1">
-        <p className="text-xl font-bold text-brand-green leading-tight">{agent.name}</p>
-        <p className="text-gray-500 text-sm mt-1">{position}</p>
-        {matricula && <p className="text-gray-400 text-xs mt-1">{matricula}</p>}
+        <p className="text-xl font-bold text-brand-green leading-tight">{persona.name}</p>
+        <p className="text-gray-500 text-sm mt-1">{persona.position}</p>
+        {persona.matricula && <p className="text-gray-400 text-xs mt-1">{persona.matricula}</p>}
       </div>
     </div>
   )
 }
 
-function TeamCard({ agent }: { agent: TokkoAgent }) {
-  const position = agent.position?.trim() || 'Asesor Inmobiliario'
-  const hasPhoto = hasCustomAvatar(agent.picture)
+function TeamCard({ persona }: { persona: PersonaWeb }) {
   return (
     <div className="flex flex-col items-center text-center">
       <div className="relative w-28 h-28 rounded-full overflow-hidden bg-gray-100 mb-4 shadow-sm">
-        {hasPhoto ? (
+        {persona.picture ? (
           <Image
-            src={agent.picture!}
-            alt={agent.name}
+            src={persona.picture}
+            alt={persona.name}
             fill
             className="object-cover object-top"
             sizes="112px"
           />
         ) : (
-          <AgentInitials name={agent.name} />
+          <AgentInitials name={persona.name} />
         )}
       </div>
-      <p className="font-bold text-gray-900 text-base leading-tight">{agent.name}</p>
-      <p className="text-gray-500 text-sm mt-1">{position}</p>
+      <p className="font-bold text-gray-900 text-base leading-tight">{persona.name}</p>
+      <p className="text-gray-500 text-sm mt-1">{persona.position}</p>
     </div>
   )
 }
 
 export default async function NosotrosPage() {
-  let allAgents: TokkoAgent[] = []
-  try { allAgents = await getAgents() } catch {}
-
-  const laureano = await getAgentById(43426)
-
-  const direction = allAgents.filter(a => DIRECTION_IDS.includes(a.id))
-
-  const tokkoTeam = allAgents.filter(a => !DIRECTION_IDS.includes(a.id) && a.id !== 43426)
-  const team: TokkoAgent[] = [
-    ...(laureano ? [laureano] : []),
-    ...tokkoTeam,
-    ...STATIC_TEAM,
-  ].sort((a, b) => a.name.localeCompare(b.name))
+  // Fuente principal: sección Empresa del CRM. Si no se puede leer, se usa la lista armada desde Tokko.
+  const web = await getEquipoWeb()
+  let direccion: PersonaWeb[]
+  let team: PersonaWeb[]
+  if (web) {
+    direccion = web.direccion
+    team = web.equipo
+  } else {
+    let allAgents: TokkoAgent[] = []
+    try { allAgents = await getAgents() } catch {}
+    const laureano = await getAgentById(43426)
+    const aPersona = (a: TokkoAgent, extra: Partial<PersonaWeb> = {}): PersonaWeb => ({
+      key: String(a.id),
+      name: a.name,
+      position: a.position?.trim() || 'Asesor Inmobiliario',
+      picture: hasCustomAvatar(a.picture) ? a.picture : undefined,
+      ...extra,
+    })
+    direccion = DIRECTION_MEMBERS.flatMap(({ id, matricula, positionOverride }) => {
+      const a = allAgents.find(x => x.id === id)
+      return a ? [aPersona(a, { matricula, position: positionOverride || a.position?.trim() || 'Dirección' })] : []
+    })
+    const tokkoTeam = allAgents.filter(a => !DIRECTION_IDS.includes(a.id) && a.id !== 43426)
+    team = [...(laureano ? [laureano] : []), ...tokkoTeam, ...STATIC_TEAM]
+      .map(a => aPersona(a))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }
 
   return (
     <>
@@ -255,15 +268,11 @@ export default async function NosotrosPage() {
                 <div className="h-px flex-1 bg-gray-200" />
               </div>
               <div className="grid grid-cols-2 gap-8 max-w-xl mx-auto">
-                {DIRECTION_MEMBERS.map(({ id, matricula, positionOverride }, i) => {
-                  const agent = direction.find(a => a.id === id)
-                  if (!agent) return null
-                  return (
-                    <Reveal key={id} className="h-full" delay={i * 120}>
-                      <DirectionCard agent={agent} matricula={matricula} positionOverride={positionOverride} />
-                    </Reveal>
-                  )
-                })}
+                {direccion.map((persona, i) => (
+                  <Reveal key={persona.key} className="h-full" delay={i * 120}>
+                    <DirectionCard persona={persona} />
+                  </Reveal>
+                ))}
               </div>
             </div>
 
@@ -276,9 +285,9 @@ export default async function NosotrosPage() {
                   <div className="h-px flex-1 bg-gray-200" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-10">
-                  {team.map((agent, i) => (
-                    <Reveal key={agent.id} delay={(i % 4) * 90}>
-                      <TeamCard agent={agent} />
+                  {team.map((persona, i) => (
+                    <Reveal key={persona.key} delay={(i % 4) * 90}>
+                      <TeamCard persona={persona} />
                     </Reveal>
                   ))}
                 </div>
