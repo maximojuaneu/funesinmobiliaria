@@ -10,8 +10,13 @@ const PROPERTY_TYPES: { label: string; value: string }[] = [
   { label: 'Local comercial',  value: 'Bussiness Premises' },
   { label: 'Oficina',          value: 'Office' },
   { label: 'Campo',            value: 'Countryside' },
-  { label: 'Depósito',         value: 'Warehouse' },
+  { label: 'Galpón / Depósito', value: 'Warehouse|Storage' },
+  { label: 'Cochera',          value: 'Garage' },
 ]
+
+// Muestra los números con punto cada 3 cifras (100000 → 100.000); el valor guardado son solo dígitos.
+const conMiles = (v: string) => v.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+const soloDigitos = (v: string) => v.replace(/\D/g, '')
 
 const SUITE_OPTIONS = [
   { label: 'Mono', value: '0' },
@@ -165,22 +170,24 @@ export default function PropertyFilters({ operationType, mobile, onClose, onNavi
 
       {/* Precio */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Rango de precio</label>
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Rango de precio ({operation === 'Sale' ? 'USD' : 'ARS'})</label>
         <div className="grid grid-cols-2 gap-2">
           <input
             className="input-field"
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Mín"
-            value={priceFrom}
-            onChange={e => setPriceFrom(e.target.value)}
+            value={conMiles(priceFrom)}
+            onChange={e => setPriceFrom(soloDigitos(e.target.value))}
             onKeyDown={e => { if (e.key === 'Enter') applyFilters() }}
           />
           <input
             className="input-field"
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Máx"
-            value={priceTo}
-            onChange={e => setPriceTo(e.target.value)}
+            value={conMiles(priceTo)}
+            onChange={e => setPriceTo(soloDigitos(e.target.value))}
             onKeyDown={e => { if (e.key === 'Enter') applyFilters() }}
           />
         </div>
@@ -290,22 +297,24 @@ export default function PropertyFilters({ operationType, mobile, onClose, onNavi
 
         {/* Precio */}
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Precio</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Precio ({operation === 'Sale' ? 'USD' : 'ARS'})</label>
           <div className="grid grid-cols-2 gap-2">
             <input
               className="input-field"
-              type="number"
+              type="text"
+              inputMode="numeric"
               placeholder="Desde"
-              value={priceFrom}
-              onChange={e => setPriceFrom(e.target.value)}
+              value={conMiles(priceFrom)}
+              onChange={e => setPriceFrom(soloDigitos(e.target.value))}
               onKeyDown={e => { if (e.key === 'Enter') applyFilters() }}
             />
             <input
               className="input-field"
-              type="number"
+              type="text"
+              inputMode="numeric"
               placeholder="Hasta"
-              value={priceTo}
-              onChange={e => setPriceTo(e.target.value)}
+              value={conMiles(priceTo)}
+              onChange={e => setPriceTo(soloDigitos(e.target.value))}
               onKeyDown={e => { if (e.key === 'Enter') applyFilters() }}
             />
           </div>

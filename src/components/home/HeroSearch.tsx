@@ -13,6 +13,8 @@ const PROPERTY_TYPES = [
   { label: 'Local comercial',  value: 'Bussiness Premises' },
   { label: 'Campo',            value: 'Countryside' },
   { label: 'Oficina',          value: 'Office' },
+  { label: 'Galpón / Depósito', value: 'Warehouse|Storage' },
+  { label: 'Cochera',          value: 'Garage' },
 ]
 
 export default function HeroSearch() {

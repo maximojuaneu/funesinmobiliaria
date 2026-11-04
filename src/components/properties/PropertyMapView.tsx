@@ -25,7 +25,7 @@ function formatPrice(amount: number, currency: string): string {
 const TYPE_ES: Record<string, string> = {
   House: 'Casa', Apartment: 'Departamento', Land: 'Terreno',
   'Bussiness Premises': 'Local comercial', Office: 'Oficina',
-  Countryside: 'Campo', Warehouse: 'Depósito',
+  Countryside: 'Campo', Warehouse: 'Galpón', Storage: 'Depósito', Garage: 'Cochera',
 }
 
 const m2 = (val: any) => { const n = parseFloat(val); return n > 0 ? Math.round(n) : null }

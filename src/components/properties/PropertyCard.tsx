@@ -21,7 +21,9 @@ const TYPE_ES: Record<string, string> = {
   'Bussiness Premises':'Local comercial',
   'Office':            'Oficina',
   'Countryside':       'Campo',
-  'Warehouse':         'Depósito',
+  'Warehouse':         'Galpón',
+  'Storage':           'Depósito',
+  'Garage':            'Cochera',
 }
 
 const m2 = (val: any) => { const n = parseFloat(val); return n > 0 ? Math.round(n) : null }

@@ -9,7 +9,9 @@ const TYPE_MAP: Record<string, string> = {
   'Bussiness Premises':'Local',
   Office:              'Oficina',
   Countryside:         'Campo',
-  Warehouse:           'Depósito',
+  Warehouse:           'Galpón',
+  Storage:             'Depósito',
+  Garage:              'Cochera',
 }
 
 export interface TokkoAgentProperty {

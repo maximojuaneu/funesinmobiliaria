@@ -83,8 +83,9 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{ ob
 
   // Filter by property type (partial match, accent-insensitive)
   if (filters.type) {
-    const t = normalize(filters.type)
-    filtered = filtered.filter(p => normalize(p.type?.name ?? '').includes(t))
+    // Admite varios tipos separados por "|" (ej.: "Warehouse|Storage" para Galpón / Depósito)
+    const ts = filters.type.split('|').map(normalize)
+    filtered = filtered.filter(p => { const n = normalize(p.type?.name ?? ''); return ts.some(t => n.includes(t)) })
   }
 
   // Filter by location/barrio (accent-insensitive, supports comma-separated OR)
@@ -155,8 +156,11 @@ const TYPE_NAME_ES_TO_EN: Record<string, string> = {
   'Local comercial': 'Bussiness Premises',
   'Oficina':         'Office',
   'Campo':           'Countryside',
-  'Depósito':        'Warehouse',
-  'Deposito':        'Warehouse',
+  'Galpón':          'Warehouse',
+  'Galpon':          'Warehouse',
+  'Depósito':        'Storage',
+  'Deposito':        'Storage',
+  'Cochera':         'Garage',
 }
 
 function normalizeProperty(p: TokkoProperty): TokkoProperty {

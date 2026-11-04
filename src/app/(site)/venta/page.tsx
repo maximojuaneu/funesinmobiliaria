@@ -25,7 +25,7 @@ export default async function VentaPage({ searchParams }: Props) {
       operation:   'Sale',
       type:        params.type,
       location:    params.location,
-      currency:    params.currency,
+      currency:    params.currency ?? 'USD',
       priceFrom:   params.priceFrom ? +params.priceFrom : undefined,
       priceTo:     params.priceTo   ? +params.priceTo   : undefined,
       suites:      params.suites    ? params.suites.split(',').map(Number).filter(n => !isNaN(n)) : undefined,

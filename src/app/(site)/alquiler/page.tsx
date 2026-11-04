@@ -27,7 +27,7 @@ export default async function AlquilerPage({ searchParams }: Props) {
       operation,
       type:        params.type,
       location:    params.location,
-      currency:    params.currency,
+      currency:    params.currency ?? 'ARS',
       priceFrom:   params.priceFrom ? +params.priceFrom : undefined,
       priceTo:     params.priceTo   ? +params.priceTo   : undefined,
       suites:      params.suites    ? params.suites.split(',').map(Number).filter(n => !isNaN(n)) : undefined,
