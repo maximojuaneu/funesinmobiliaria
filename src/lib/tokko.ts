@@ -81,11 +81,12 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{ ob
     )
   }
 
-  // Filter by property type (partial match, accent-insensitive)
+  // Filter by property type (accent-insensitive)
   if (filters.type) {
     // Admite varios tipos separados por "|" (ej.: "Warehouse|Storage" para Galpón / Depósito)
     const ts = filters.type.split('|').map(normalize)
-    filtered = filtered.filter(p => { const n = normalize(p.type?.name ?? ''); return ts.some(t => n.includes(t)) })
+    // Coincidencia exacta: con "includes", "house" también encontraba "Warehouse" (Galpón).
+    filtered = filtered.filter(p => ts.includes(normalize(p.type?.name ?? '')))
   }
 
   // Filter by location/barrio (accent-insensitive, supports comma-separated OR)
